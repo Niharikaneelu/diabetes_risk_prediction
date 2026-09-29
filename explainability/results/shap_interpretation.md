@@ -57,23 +57,23 @@ Analysis of the SHAP Beeswarm distribution plot (`shap_summary_beeswarm.png`) de
 
 Local explainability allows clinicians to examine why the model produced a specific prediction for an individual patient.
 
-### Case 1: High-Risk Patient (Predicted Probability: 95.3%)
-- **Base Log-Odds ($E[f(x)]$):** 0.0079
+### Case 1: High-Risk Patient (Predicted Probability: 91.6%)
+- **Base Log-Odds ($E[f(x)]$):** -0.6129
 - **Top Risk-Increasing Factors:**
   - **Glucose** = 171.0 (SHAP contribution: +2.288)
   - **BMI** = 43.6 (SHAP contribution: +0.466)
   - **Insulin** = 125.0 (SHAP contribution: +0.161)
 
-- **Outcome:** The cumulative positive contributions pushed the model's output significantly above the decision threshold, resulting in a high-risk prediction (95.3%).
+- **Outcome:** The cumulative positive contributions pushed the model's output significantly above the decision threshold, resulting in a high-risk prediction (91.6%).
 
-### Case 2: Low-Risk Patient (Predicted Probability: 5.2%)
-- **Base Log-Odds ($E[f(x)]$):** 0.0079
+### Case 2: Low-Risk Patient (Predicted Probability: 2.9%)
+- **Base Log-Odds ($E[f(x)]$):** -0.6129
 - **Top Protective Factors:**
   - **Glucose** = 91.0 (SHAP contribution: -1.152)
   - **BMI** = 25.2 (SHAP contribution: -0.826)
   - **Age** = 23.0 (SHAP contribution: -0.312)
 
-- **Outcome:** Normal physiological measurements provided protective contributions, keeping the model output well below the risk threshold (5.2%).
+- **Outcome:** Normal physiological measurements provided protective contributions, keeping the model output well below the risk threshold (2.9%).
 
 ---
 

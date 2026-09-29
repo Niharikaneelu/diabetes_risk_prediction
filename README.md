@@ -38,42 +38,78 @@ diabetes_risk_prediction/
 │   ├── 01_data_analysis.ipynb    # Exploratory data analysis
 │   ├── 02_model_training.ipynb   # Model training walkthrough
 │   └── 03_shap_analysis.ipynb    # SHAP explainability walkthrough
+├── frontend/
+│   └── index.html                # Compiled clinical decision support UI
+├── build_frontend.py             # Healthcare UI asset compiler
 ├── app.py                        # Phase 3 interactive Streamlit application
-└── requirements.txt              # Python package dependencies
+├── requirements.txt              # Python package dependencies
+└── .gitignore                    # Git ignore specifications
 ```
 
 ## Setup
 
+### 1. Clone repository & create virtual environment
+
+**On Windows (PowerShell):**
+```powershell
+cd diabetes_risk_prediction
+python -m venv .venv
+
+# If script execution is restricted in PowerShell, run:
+# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+.\.venv\Scripts\Activate.ps1
+```
+
+**On Windows (Command Prompt):**
+```cmd
+cd diabetes_risk_prediction
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+```
+
+**On macOS / Linux:**
 ```bash
 cd diabetes_risk_prediction
 python3 -m venv .venv
-source .venv/bin/activate   # On Mac/Linux
-# .\.venv\Scripts\Activate.ps1  # On Windows
+source .venv/bin/activate
 
-pip install -r requirements.txt
-
-# Mac users: XGBoost requires OpenMP
+# macOS users: XGBoost requires OpenMP
 brew install libomp
 ```
 
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
 ## Running the Pipelines
 
-### Run the ML training pipeline (Phase 2):
+### 1. Run the ML training pipeline (Phase 2):
 ```bash
 python ml/run_pipeline.py
 ```
+> Trains Random Forest and XGBoost with 5-fold cross-validation, selects the best model, and outputs performance plots and model weights into `models/` and `results/`.
 
-### Run the SHAP explainability pipeline (Phase 3):
+### 2. Run the SHAP explainability pipeline (Phase 3):
 ```bash
 python explainability/run_shap.py
 ```
+> Computes TreeExplainer SHAP values on test data, generates global beeswarm and dependence plots, individual waterfall charts, and `results/shap_interpretation.md`.
 
-### Launch the Streamlit application:
+### 3. Launch the Streamlit application:
 ```bash
+# Direct command (if Streamlit is in PATH or venv is activated):
 streamlit run app.py
+
+# Alternatively, run via Python module (recommended on Windows to avoid PATH issues):
+python -m streamlit run app.py
 ```
 
-### Run the notebooks:
+### 4. Run the interactive notebooks:
 ```bash
 jupyter notebook
 ```
