@@ -7,10 +7,12 @@ from explainability.shap_analysis import (
     explain_prediction,
     get_tree_explainer,
     load_best_model,
+    load_any_model,
 )
 
 __all__ = [
     "load_best_model",
+    "load_any_model",
     "get_tree_explainer",
     "compute_shap_values",
     "compute_global_importance",

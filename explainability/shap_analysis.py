@@ -33,7 +33,8 @@ from ml.model_utils import (
 
 def load_best_model(model_path: Optional[Union[str, Path]] = None) -> Any:
     """
-    Load and validate the best trained model (models/best_model.pkl).
+    Load the best trained model (models/best_model.pkl).
+    Accepts XGBoost (default best model) or any scikit-learn compatible classifier.
     """
     if model_path is None:
         model_path = get_project_root() / "models" / "best_model.pkl"
@@ -47,11 +48,29 @@ def load_best_model(model_path: Optional[Union[str, Path]] = None) -> Any:
     with open(path, "rb") as f:
         model = pickle.load(f)
 
-    # Verify model is XGBoost
-    model_type_name = type(model).__name__
-    if "XGB" not in model_type_name:
-        raise TypeError(f"Expected XGBoost classifier, but loaded: {model_type_name}")
+    return model
 
+
+def load_any_model(model_name: str = "best") -> Any:
+    """
+    Load a named model from the models/ directory.
+    Supported names: 'best', 'xgboost', 'random_forest'.
+    Returns the loaded model object.
+    """
+    name_map = {
+        "best": "best_model",
+        "xgboost": "xgboost",
+        "random_forest": "random_forest",
+    }
+    key = model_name.lower().strip()
+    filename = name_map.get(key, "best_model")
+    model_path = get_project_root() / "models" / f"{filename}.pkl"
+    if not model_path.exists():
+        model_path = model_path.with_suffix(".joblib")
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
     return model
 
 
@@ -271,11 +290,16 @@ def compare_feature_importance(
 class DiabetesExplainerService:
     """
     Singleton-style service for computing real-time SHAP explanations for new inference queries.
+    Supports model selection: 'best', 'xgboost', or 'random_forest'.
     """
-    _instance = None
+    _instances: Dict[str, "DiabetesExplainerService"] = {}
 
-    def __init__(self, model_path: Optional[Union[str, Path]] = None):
-        self.model = load_best_model(model_path)
+    def __init__(self, model_path: Optional[Union[str, Path]] = None, model_name: str = "best"):
+        if model_path is not None:
+            self.model = load_best_model(model_path)
+        else:
+            self.model = load_any_model(model_name)
+        self.model_name = model_name
         self.explainer = get_tree_explainer(self.model)
 
         # Precompute training medians for imputation using the same pipeline
@@ -284,10 +308,11 @@ class DiabetesExplainerService:
         self.imputation_medians = X_train[ZERO_AS_MISSING].median().to_dict()
 
     @classmethod
-    def get_instance(cls) -> "DiabetesExplainerService":
-        if cls._instance is None:
-            cls._instance = DiabetesExplainerService()
-        return cls._instance
+    def get_instance(cls, model_name: str = "best") -> "DiabetesExplainerService":
+        key = model_name.lower().strip()
+        if key not in cls._instances:
+            cls._instances[key] = DiabetesExplainerService(model_name=key)
+        return cls._instances[key]
 
     def explain_prediction(
         self,
@@ -328,8 +353,29 @@ class DiabetesExplainerService:
 
         # Compute SHAP
         explanation = self.explainer(df_input)
-        shap_values = explanation.values[0]
-        base_value = float(explanation.base_values[0])
+
+        # Handle XGBoost (values shape: n_features) and Random Forest (shape: n_features x n_classes)
+        raw_shap = explanation.values[0]      # (n_features,) or (n_features, n_classes)
+        raw_base = explanation.base_values[0]  # scalar or array of shape (n_classes,)
+
+        import numpy as np
+        import shap as shap_lib
+
+        if np.ndim(raw_shap) == 2:
+            # Random Forest multi-class: take positive class (index 1)
+            shap_values = raw_shap[:, 1]
+            base_value = float(raw_base[1])
+        else:
+            shap_values = raw_shap
+            base_value = float(raw_base)
+
+        # Build a clean 1-D Explanation object for waterfall plot (works for both models)
+        waterfall_exp = shap_lib.Explanation(
+            values=shap_values,
+            base_values=base_value,
+            data=df_input[FEATURE_COLUMNS].values[0],
+            feature_names=FEATURE_COLUMNS,
+        )
 
         # Breakdown contributions
         contributions = {}
@@ -338,15 +384,16 @@ class DiabetesExplainerService:
 
         for feat, shap_val in zip(FEATURE_COLUMNS, shap_values):
             val = float(df_input[feat].iloc[0])
+            sv = float(shap_val)
             contributions[feat] = {
                 "feature_value": val,
-                "shap_value": float(shap_val),
-                "direction": "Increases Risk" if shap_val > 0 else "Decreases Risk",
+                "shap_value": sv,
+                "direction": "Increases Risk" if sv > 0 else "Decreases Risk",
             }
-            if shap_val > 0:
-                top_pos.append((feat, float(shap_val), val))
+            if sv > 0:
+                top_pos.append((feat, sv, val))
             else:
-                top_neg.append((feat, float(shap_val), val))
+                top_neg.append((feat, sv, val))
 
         # Sort contributions
         top_pos.sort(key=lambda x: x[1], reverse=True)
@@ -360,7 +407,7 @@ class DiabetesExplainerService:
             "feature_contributions": contributions,
             "top_positive_contributors": top_pos,
             "top_negative_contributors": top_neg,
-            "explanation": explanation[0],
+            "explanation": waterfall_exp,
             "input_df": df_input,
         }
 
