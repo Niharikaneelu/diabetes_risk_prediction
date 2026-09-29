@@ -90,6 +90,9 @@ Thumbs.db
 *~
 *.sublime-project
 *.sublime-workspace
+.cursor/
+.claude/
+.gemini/
 
 # Optional: Large model artifacts / checkpoints
 # (Uncomment below if you want to prevent committing heavy trained models)
