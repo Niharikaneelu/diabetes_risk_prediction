@@ -61,8 +61,9 @@ if not frontend_file.exists():
 with open(frontend_file, "r", encoding="utf-8") as f:
     html_markup = f.read()
 
-# Inject active API port into the page context
-port_script = f"<script>window.PREDICTION_API_PORT = {api_port};</script>"
+# Inject active API port and optional page param into the page context
+page_param = st.query_params.get("page", "")
+port_script = f"<script>window.PREDICTION_API_PORT = {api_port}; window.INITIAL_PAGE = '{page_param}';</script>"
 if "<head>" in html_markup:
     html_markup = html_markup.replace("<head>", f"<head>\n  {port_script}", 1)
 else:

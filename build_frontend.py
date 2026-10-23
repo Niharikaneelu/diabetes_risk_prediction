@@ -184,12 +184,12 @@ html_content = f'''<!DOCTYPE html>
 <body class="bg-surface text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen flex flex-col">
 
   <!-- Top Sticky Navigation Bar -->
-  <header class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] no-print" style="transform: translateZ(0); will-change: transform;">
+  <header id="appHeader" class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] no-print transition-all duration-300" style="transform: translateZ(0); will-change: transform;">
     <div class="h-16 max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-space-sm sm:gap-space-md">
       
       <!-- Left Logo & Title -->
       <div class="flex items-center gap-space-md">
-        <div class="flex items-center gap-space-sm cursor-pointer" onclick="switchTab('risk-prediction')">
+        <div class="flex items-center gap-space-sm cursor-pointer" onclick="switchTab('landing')" title="Back to Landing Page">
           <div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center font-bold text-lg shadow-sm">
             <span class="material-symbols-outlined text-[20px]">vital_signs</span>
           </div>
@@ -218,7 +218,12 @@ html_content = f'''<!DOCTYPE html>
       </div>
 
       <!-- Right Action Items -->
-      <div class="flex items-center gap-space-sm sm:gap-space-md"></div>
+      <div class="flex items-center gap-space-sm sm:gap-space-md">
+        <button onclick="switchTab('landing')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" title="Return to Landing Page">
+          <span class="material-symbols-outlined text-[18px]">home</span>
+          <span class="hidden md:inline">Home</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -229,8 +234,32 @@ html_content = f'''<!DOCTYPE html>
   </div>
 
   <!-- MAIN VIEWPORT -->
-  <main class="w-full pt-16 bg-surface flex-1 flex flex-col">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6 w-full">
+  <main id="mainContent" class="w-full pt-16 bg-surface flex-1 flex flex-col transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6 w-full flex-1 flex flex-col">
+
+      <!-- ========================================================================= -->
+      <!-- TAB 0: LANDING PAGE                                                       -->
+      <!-- ========================================================================= -->
+      <div id="tab-content-landing" class="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] w-full text-center px-4 py-12 relative my-auto">
+        <!-- Subtle theme-matching atmospheric backdrop glow -->
+        <div class="absolute w-[500px] h-[500px] rounded-full bg-primary/5 blur-3xl pointer-events-none -top-10 -left-10"></div>
+        <div class="absolute w-[450px] h-[450px] rounded-full bg-secondary-container/20 blur-3xl pointer-events-none -bottom-10 -right-10"></div>
+
+        <div class="relative z-10 flex flex-col items-center max-w-4xl mx-auto">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-on-surface tracking-tight leading-[1.18] max-w-3xl">
+            Explainable Diabetes Risk Prediction using Machine Learning
+          </h1>
+          <p class="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-on-surface-variant max-w-2xl mt-6 leading-relaxed">
+            A Comparative Analysis of Random Forest and XGBoost with SHAP
+          </p>
+          <div class="mt-10 sm:mt-12">
+            <button id="btnExploreApp" onclick="switchTab('risk-prediction')" class="group inline-flex items-center gap-3 px-8 py-4 rounded-xl sm:rounded-2xl bg-primary text-on-primary font-semibold text-base sm:text-lg shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer">
+              <span>Explore Application</span>
+              <span class="material-symbols-outlined text-[22px] transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- ========================================================================= -->
       <!-- TAB 1: RISK PREDICTION (MAIN WORKSTATION)                                 -->
@@ -307,7 +336,7 @@ html_content = f'''<!DOCTYPE html>
                 </svg>
                 <div class="flex items-center justify-between text-label-sm text-on-surface-variant pt-2">
                   <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary" id="legendDot"></span><span id="legendText">Random Forest Predictor</span></span>
-                  <span class="flex items-center gap-1 cursor-pointer font-semibold text-secondary hover:underline" onclick="scrollToShap()"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>SHAP Attribution</span>
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>SHAP Attribution</span>
                   <span class="text-tertiary font-semibold">Ready</span>
                 </div>
               </div>
@@ -708,10 +737,6 @@ html_content = f'''<!DOCTYPE html>
           </div>
           
           <div class="flex items-center gap-2.5">
-            <button class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-semibold flex items-center gap-1.5 transition-colors" onclick="newAssessment()">
-              <span class="material-symbols-outlined text-[18px]">add_circle</span>
-              <span>New Assessment</span>
-            </button>
             <button class="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-surface-tint text-label-md font-semibold flex items-center gap-1.5 shadow-xs transition-all" onclick="exportReport()">
               <span class="material-symbols-outlined text-[18px]">print</span>
               <span>Export Report</span>
@@ -833,7 +858,7 @@ html_content = f'''<!DOCTYPE html>
 
                 <!-- Jump Button -->
                 <div class="mt-3 pt-2.5 border-t border-secondary/20 flex items-center justify-between">
-                  <button class="text-label-sm font-bold text-secondary hover:text-on-secondary-container flex items-center gap-1 transition-colors" onclick="scrollToShap()">
+                  <button class="text-label-sm font-bold text-secondary hover:text-on-secondary-container flex items-center gap-1 transition-colors" onclick="document.getElementById('shap-analysis-section')?.scrollIntoView({{ behavior: 'smooth' }})">
                     <span>Full Waterfall Breakdown</span>
                     <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
                   </button>
@@ -1099,20 +1124,14 @@ html_content = f'''<!DOCTYPE html>
       <!-- ========================================================================= -->
       <div id="tab-content-explainability-xai" class="hidden flex flex-col w-full gap-6">
         
-        <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center">
-              <span class="material-symbols-outlined text-[28px]">psychology</span>
-            </div>
-            <div>
-              <h2 class="text-headline-sm text-on-surface font-bold">SHAP Explainability Suite (TreeSHAP)</h2>
-              <p class="text-body-sm text-on-surface-variant">Comprehensive local and global interpretability powered by cooperative game theoretic Shapley values.</p>
-            </div>
+        <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[28px]">psychology</span>
           </div>
-          <button class="px-4 py-2 rounded-xl bg-primary text-on-primary text-label-md font-semibold flex items-center gap-2 shadow-xs" onclick="switchTab('risk-prediction'); scrollToShap();">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Return to Patient Risk Waterfall</span>
-          </button>
+          <div>
+            <h2 class="text-headline-sm text-on-surface font-bold">SHAP Explainability Suite (TreeSHAP)</h2>
+            <p class="text-body-sm text-on-surface-variant">Comprehensive local and global interpretability powered by cooperative game theoretic Shapley values.</p>
+          </div>
         </div>
 
         <!-- Global SHAP Plots (Beeswarm & Bar) -->
@@ -1200,33 +1219,6 @@ html_content = f'''<!DOCTYPE html>
           </p>
         </div>
 
-        <!-- Mathematical Foundations Card -->
-        <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm">
-          <h3 class="text-label-lg font-bold text-on-surface mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary text-[20px]">functions</span>
-            Mathematical Rigor & Theoretical Guarantees of TreeSHAP
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-            <div class="p-4 rounded-xl bg-surface-container-low">
-              <span class="text-label-md font-bold text-primary block mb-1">1. Local Accuracy (Additivity)</span>
-              <p class="text-body-sm text-on-surface-variant">
-                The sum of feature attributions strictly equals the difference between the model's output and its expected baseline: <code>f(x) = E[f(x)] + Σ φ_i</code>.
-              </p>
-            </div>
-            <div class="p-4 rounded-xl bg-surface-container-low">
-              <span class="text-label-md font-bold text-secondary block mb-1">2. Consistency</span>
-              <p class="text-body-sm text-on-surface-variant">
-                If a model changes such that a feature's marginal contribution increases, its assigned attribution cannot decrease, preventing misleading comparisons.
-              </p>
-            </div>
-            <div class="p-4 rounded-xl bg-surface-container-low">
-              <span class="text-label-md font-bold text-tertiary block mb-1">3. Missingness</span>
-              <p class="text-body-sm text-on-surface-variant">
-                Features with zero influence on the prediction are guaranteed a SHAP value of zero, eliminating noise and false associations.
-              </p>
-            </div>
-          </div>
-        </div>
 
       </div>
 
@@ -1587,20 +1579,6 @@ html_content = f'''<!DOCTYPE html>
       }}
     }}
 
-    function scrollToShap() {{
-      switchTab('risk-prediction');
-      setTimeout(() => {{
-        const el = document.getElementById('shap-analysis-section');
-        if (el) {{
-          if (window.lenisInstance) {{
-            window.lenisInstance.scrollTo(el, {{ offset: -70, duration: 0.9 }});
-          }} else {{
-            el.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
-          }}
-          showToast('Navigated to SHAP Local Attribution');
-        }}
-      }}, 80);
-    }}
 
     function switchImportanceView(view) {{
       const btnXgb = document.getElementById('btnImpXgb');
@@ -1666,7 +1644,25 @@ html_content = f'''<!DOCTYPE html>
       if (tabId === 'assessment' || tabId === 'risk-assessment') targetTab = 'risk-prediction';
       if (tabId === 'results' || tabId === 'prediction-results') targetTab = 'prediction-results';
 
-      const tabs = ['risk-prediction', 'prediction-results', 'explainability-xai', 'model-benchmark-and-insights'];
+      const tabs = ['landing', 'risk-prediction', 'prediction-results', 'explainability-xai', 'model-benchmark-and-insights'];
+
+      const appHeader = document.getElementById('appHeader');
+      const mainEl = document.getElementById('mainContent');
+      if (appHeader) {{
+        if (targetTab === 'landing') {{
+          appHeader.classList.add('hidden');
+        }} else {{
+          appHeader.classList.remove('hidden');
+        }}
+      }}
+      if (mainEl) {{
+        if (targetTab === 'landing') {{
+          mainEl.classList.remove('pt-16');
+        }} else {{
+          mainEl.classList.add('pt-16');
+        }}
+      }}
+
       tabs.forEach(t => {{
         const content = document.getElementById('tab-content-' + t);
         const btn = document.getElementById('nav-' + t);
@@ -1711,7 +1707,8 @@ html_content = f'''<!DOCTYPE html>
 
       // Update URL hash for browser history
       if (pushHistory) {{
-        const routeHash = targetTab === 'risk-prediction' ? 'assessment' : 
+        const routeHash = targetTab === 'landing' ? 'landing' :
+                          targetTab === 'risk-prediction' ? 'assessment' : 
                           targetTab === 'prediction-results' ? 'results' : targetTab;
         if (window.location.hash !== '#' + routeHash) {{
           try {{
@@ -1733,14 +1730,18 @@ html_content = f'''<!DOCTYPE html>
     // Browser back/forward navigation handler
     window.addEventListener('popstate', () => {{
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'results' || hash === 'prediction-results') {{
+      if (hash === 'landing') {{
+        switchTab('landing', false);
+      }} else if (hash === 'results' || hash === 'prediction-results') {{
         switchTab('prediction-results', false);
       }} else if (hash === 'explainability-xai') {{
         switchTab('explainability-xai', false);
       }} else if (hash === 'model-benchmark-and-insights' || hash === 'benchmark') {{
         switchTab('model-benchmark-and-insights', false);
-      }} else {{
+      }} else if (hash === 'assessment' || hash === 'risk-prediction') {{
         switchTab('risk-prediction', false);
+      }} else {{
+        switchTab('landing', false);
       }}
     }});
 
@@ -2787,16 +2788,20 @@ html_content = f'''<!DOCTYPE html>
         }}
       }});
 
-      // Route based on URL hash
+      // Route based on URL hash or initial page parameter
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'results' || hash === 'prediction-results') {{
+      const initPage = (window.INITIAL_PAGE || '').toLowerCase();
+      if (hash === 'results' || hash === 'prediction-results' || initPage === 'results') {{
         switchTab('prediction-results', false);
-      }} else if (hash === 'explainability-xai') {{
+      }} else if (hash === 'explainability-xai' || initPage === 'explainability') {{
         switchTab('explainability-xai', false);
-      }} else if (hash === 'model-benchmark-and-insights' || hash === 'benchmark') {{
+      }} else if (hash === 'model-benchmark-and-insights' || hash === 'benchmark' || initPage === 'benchmark') {{
         switchTab('model-benchmark-and-insights', false);
-      }} else {{
+      }} else if (hash === 'assessment' || hash === 'risk-prediction' || initPage === 'assessment' || initPage === 'app') {{
         switchTab('risk-prediction', false);
+      }} else {{
+        // Defaults to landing page if hash is empty, or '#landing', or ?page=landing
+        switchTab('landing', false);
       }}
 
       syncFrameHeight();

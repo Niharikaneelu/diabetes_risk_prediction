@@ -114,8 +114,7 @@ def test_04_page_2_prediction_results_structure(frontend_html: str):
 
     # Navigation actions
     assert "Back to Assessment" in page2_content
-    assert "New Assessment" in page2_content
-    assert "newAssessment()" in page2_content
+    assert "Export Report" in page2_content
     assert "switchTab('risk-prediction')" in page2_content
 
     # Graceful empty state without fabricated data
@@ -223,3 +222,13 @@ def test_06_e2e_backend_inference_and_record_contract(api_server_port):
             assert "base_value" in res
             assert "risk_tier" in res
             assert "model_name" in res
+
+
+def test_07_landing_page_integrity(frontend_html: str):
+    """Verify landing page exists with exact specified text and navigation button."""
+    assert 'id="tab-content-landing"' in frontend_html
+    assert 'id="btnExploreApp"' in frontend_html
+    assert "Explainable Diabetes Risk Prediction using Machine Learning" in frontend_html
+    assert "A Comparative Analysis of Random Forest and XGBoost with SHAP" in frontend_html
+    assert "switchTab('risk-prediction')" in frontend_html
+
