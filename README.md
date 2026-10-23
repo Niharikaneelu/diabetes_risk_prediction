@@ -12,7 +12,8 @@ diabetes_risk_prediction/
 │   ├── run_pipeline.py           # Phase 2 end-to-end training pipeline
 │   ├── train_models.py           # Random Forest & XGBoost training + hyperparameter tuning
 │   ├── evaluate_models.py        # Evaluation metrics, ROC, confusion matrix
-│   └── model_utils.py            # Data loading, split, visualization utilities
+│   ├── model_utils.py            # Data loading, split, visualization utilities
+│   └── server.py                 # REST inference server for live model predictions & SHAP
 ├── explainability/
 │   ├── run_shap.py               # Phase 3 global SHAP analysis execution script
 │   ├── shap_analysis.py          # SHAP engine: TreeExplainer, plots, inference service
@@ -22,10 +23,10 @@ diabetes_risk_prediction/
 │   ├── models.py                 # Model construction utilities
 │   └── evaluation.py             # Evaluation helper stubs
 ├── models/
-│   ├── best_model.pkl            # Best model (XGBoost, selected by Phase 2)
+│   ├── best_model.pkl            # Best model (Random Forest, selected by CV)
 │   ├── best_model.joblib         # Same model in joblib format
-│   ├── xgboost.pkl / .joblib     # Tuned XGBoost model
-│   └── random_forest.pkl / .joblib  # Tuned Random Forest model
+│   ├── xgboost.pkl / .joblib     # Tuned XGBoost model (threshold: 0.42)
+│   └── random_forest.pkl / .joblib  # Tuned Random Forest model (threshold: 0.48)
 ├── results/
 │   ├── metrics.csv               # Test set performance metrics
 │   ├── model_comparison.csv      # Side-by-side model comparison
@@ -134,8 +135,9 @@ The Pima Indians Diabetes dataset contains 768 patient records with 8 clinical f
 - XGBoost (tuned via 5-fold GridSearchCV on F1-score)
 
 **Model selection:**
-- Best model selected based on F1-score on untouched test set
-- XGBoost was selected as best model and saved to `models/best_model.pkl`
+- Best model selected strictly on training-side 5-fold stratified cross-validation (composite score based on out-of-fold F1-score and cross-validation stability)
+- The holdout test set ($N=154$) remained completely untouched and frozen during model training, tuning, and threshold selection to guarantee zero data leakage
+- Random Forest was selected as best model and saved to `models/best_model.pkl` (with optimal decision threshold of 0.48; tuned XGBoost model preserved with threshold 0.42)
 
 **Feature order used during training (and required at inference):**
 1. Pregnancies
@@ -203,85 +205,71 @@ Each individual prediction is explained by a waterfall plot showing:
 - Per-feature SHAP contributions (red = increases risk, blue = decreases risk)
 - Final predicted value `f(x)` = base + sum(SHAP values)
 
-### Local (Patient-Specific) Explainability
+### Local (Patient-Specific) Explainability & Live Inference
 
-For every prediction made through the application, the system:
+For every prediction made through the application or API, the system:
 
-1. Accepts patient input (8 features)
-2. Applies the same preprocessing used during training (zero → median imputation)
-3. Passes through the saved XGBoost model
-4. Computes exact SHAP values using `TreeExplainer`
-5. Identifies top risk-increasing and risk-decreasing features
-6. Renders an interactive waterfall plot
+1. Accepts patient biometric inputs (8 clinical features)
+2. Applies exact training-set medians (`models/metadata.json`) for missing / zero feature imputation
+3. Validates and enforces strict canonical feature ordering
+4. Passes preprocessed biometrics through the selected trained model (`models/best_model.pkl`, `random_forest.pkl`, or `xgboost.pkl`)
+5. Calculates genuine model predicted probabilities (`predict_proba()[:, 1]`) and applies the model's optimal decision threshold (Random Forest: 0.48, XGBoost: 0.42)
+6. Computes exact Shapley values using SHAP `TreeExplainer` on the native tree structure
+7. Generates local feature contributions, directional attributions, and cumulative force/waterfall values
 
 ### Model Inference Flow
 
 ```
-User Input (8 features)
+User Input (8 biometric features)
         ↓
-Zero → Median Imputation (using training-set medians)
+Zero → Median Imputation (strictly using training-set medians)
         ↓
-Feature Ordering Enforced
+Strict Canonical Feature Ordering Enforced
         ↓
-Saved XGBClassifier (best_model.pkl)
+Active Trained Model Artifact (Random Forest or XGBoost)
         ↓
-predict_proba() → Risk Probability
-predict() → Class Label (0 = Low Risk, 1 = High Risk)
+predict_proba() → Genuine Risk Probability
+Threshold Rule (p ≥ 0.48 for RF, p ≥ 0.42 for XGB) → Risk Classification
         ↓
-SHAP TreeExplainer(model)(df_input) → Explanation object
+SHAP TreeExplainer(model) → Local Shapley Attributions
         ↓
-Local SHAP Waterfall + Feature Contributions Table
+Live Interactive UI (Waterfall, Divergence, Factor Cards)
 ```
 
-### Streamlit Application
-
-The application provides a polished, professional interface with:
-
-- **Patient input form** — 8 clinical measurement inputs with units and validation ranges
-- **Risk probability card** — Large visual probability display with color-coded result
-- **Top features summary** — Risk-increasing vs risk-decreasing features at a glance
-- **Feature Contributions tab** — Sortable table of SHAP contributions per feature
-- **Patient SHAP Explanation tab** — Waterfall plot for the specific prediction
-- **Global Model Insights tab** — Bar plot, beeswarm plot, and feature importance table
-- **Model selection sidebar** — Switch between Best Model, Random Forest, and XGBoost
-
-### Architecture
+### Application & Client-Server Architecture
 
 ```
-                    ┌─────────────────┐
-                    │   User Input    │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │  Preprocessing  │
-                    │ (zero→median)   │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │ Trained XGBoost │
-                    │      Model      │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │   Prediction    │
-                    │ Probability +   │
-                    │ Classification  │
-                    └────────┬────────┘
-                             ↓
-                    ┌─────────────────┐
-                    │      SHAP       │
-                    │   TreeExplainer │
-                    └────────┬────────┘
-                             ↓
-             ┌───────────────┴───────────────┐
-             ↓                               ↓
-     Local Explanation                Global Explanation
-             ↓                               ↓
-     Waterfall Plot                  Beeswarm / Bar Plot
-             │                               │
-             └───────────────┬───────────────┘
-                             ↓
-                    Streamlit Dashboard
+                 ┌────────────────────────────────┐
+                 │ Interactive Web Client (UI)    │
+                 │ (Tailwind / Lenis / Async JS)  │
+                 └───────────────┬────────────────┘
+                                 │ HTTP POST /api/predict
+                                 ▼
+                 ┌────────────────────────────────┐
+                 │ Python REST Inference Server   │
+                 │ (ml/server.py / Streamlit)     │
+                 └───────────────┬────────────────┘
+                                 │
+                 ┌───────────────┴────────────────┐
+                 ▼                                ▼
+     ┌────────────────────────┐      ┌────────────────────────┐
+     │ Random Forest Artifact │      │    XGBoost Artifact    │
+     │ (Threshold: 0.48)      │      │    (Threshold: 0.42)   │
+     └───────────┬────────────┘      └───────────┬────────────┘
+                 │                               │
+                 └───────────────┬───────────────┘
+                                 ▼
+                 ┌────────────────────────────────┐
+                 │ DiabetesExplainerService       │
+                 │ - predict_proba()              │
+                 │ - SHAP TreeExplainer           │
+                 └───────────────┬────────────────┘
+                                 │ JSON Response (Prob, Class, SHAP)
+                                 ▼
+                 ┌────────────────────────────────┐
+                 │ Live Interactive Visualizations│
+                 │ (Gauge, Divergence, Stepper)   │
+                 └────────────────────────────────┘
 ```
 
 ### Important Assumptions and Limitations

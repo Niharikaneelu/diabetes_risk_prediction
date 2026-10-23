@@ -1,0 +1,139 @@
+{
+  "project": "Explainable Diabetes Risk Prediction using Machine Learning",
+  "best_model_name": "Random Forest",
+  "random_state": 42,
+  "feature_columns": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "imputation_strategy": "median",
+  "imputation_medians": {
+    "Glucose": 117.0,
+    "BloodPressure": 72.0,
+    "SkinThickness": 29.0,
+    "Insulin": 125.0,
+    "BMI": 32.4
+  },
+  "missingness_indicators": false,
+  "models": {
+    "Random Forest": {
+      "class": "RandomForestClassifier",
+      "params": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": "balanced",
+        "criterion": "gini",
+        "max_depth": 6,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 3,
+        "min_samples_split": 5,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 200,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "optimal_threshold": 0.48,
+      "oof_f1_optimal": 0.7024793388429752,
+      "oof_f1_default": 0.7016806722689075,
+      "f1_gain": 0.0007986665740676857,
+      "holdout_metrics": {
+        "accuracy": 0.7337662337662337,
+        "precision": 0.5866666666666667,
+        "recall": 0.8148148148148148,
+        "f1_score": 0.6821705426356589,
+        "roc_auc": 0.8333333333333334,
+        "pr_auc": 0.7215216618334704
+      },
+      "holdout_metrics_default_th05": {
+        "accuracy": 0.7402597402597403,
+        "precision": 0.5972222222222222,
+        "recall": 0.7962962962962963,
+        "f1_score": 0.6825396825396826,
+        "roc_auc": 0.8333333333333334
+      }
+    },
+    "XGBoost": {
+      "class": "XGBClassifier",
+      "params": {
+        "objective": "binary:logistic",
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "colsample_bytree": 0.8,
+        "device": null,
+        "early_stopping_rounds": null,
+        "enable_categorical": true,
+        "eval_metric": "logloss",
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "learning_rate": 0.02,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_depth": 3,
+        "max_leaves": null,
+        "min_child_weight": null,
+        "missing": NaN,
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_estimators": 150,
+        "n_jobs": 1,
+        "num_parallel_tree": null,
+        "random_state": 42,
+        "reg_alpha": null,
+        "reg_lambda": null,
+        "sampling_method": null,
+        "scale_pos_weight": 1.8604651162790697,
+        "subsample": 0.8,
+        "tree_method": null,
+        "validate_parameters": null,
+        "verbosity": null
+      },
+      "optimal_threshold": 0.42,
+      "oof_f1_optimal": 0.7003891050583657,
+      "oof_f1_default": 0.6864406779661016,
+      "f1_gain": 0.01394842709226407,
+      "holdout_metrics": {
+        "accuracy": 0.7402597402597403,
+        "precision": 0.5897435897435898,
+        "recall": 0.8518518518518519,
+        "f1_score": 0.696969696969697,
+        "roc_auc": 0.8403703703703702,
+        "pr_auc": 0.7309472796392447
+      },
+      "holdout_metrics_default_th05": {
+        "accuracy": 0.7532467532467533,
+        "precision": 0.6081081081081081,
+        "recall": 0.8333333333333334,
+        "f1_score": 0.703125,
+        "roc_auc": 0.8403703703703702
+      }
+    }
+  },
+  "environment": {
+    "scikit_learn_version": "1.9.0",
+    "xgboost_version": "3.4.1",
+    "numpy_version": "2.3.4",
+    "pandas_version": "3.0.5"
+  }
+}

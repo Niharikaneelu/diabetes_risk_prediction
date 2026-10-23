@@ -2,14 +2,14 @@
 Reproducible Execution Script for SHAP Analysis and Model Explainability.
 
 Executes:
-1. Model loading and validation (best_model.pkl -> XGBoost)
+1. Model loading and validation (best_model.pkl -> selected best model)
 2. Evaluation data preparation (test set of 154 patients, zero data leakage)
 3. SHAP TreeExplainer initialization and explanation calculation
 4. Global feature importance calculation and summary bar plot
 5. SHAP Beeswarm distribution plot
 6. Feature effect dependence plots for top risk factors
 7. Local patient waterfall explanations (Positive & Negative predictions)
-8. Comparison between XGBoost native importance and SHAP importance
+8. Comparison between native model importance and SHAP importance
 9. Automated comprehensive interpretation report (results/shap_interpretation.md)
 """
 
@@ -40,6 +40,7 @@ from explainability.shap_analysis import (
 from ml.model_utils import (
     FEATURE_COLUMNS,
     TARGET_COLUMN,
+    load_metadata,
     load_processed_data,
     split_data,
 )
@@ -79,8 +80,8 @@ def run_full_shap_pipeline() -> None:
     explainer = get_tree_explainer(model)
     explanation = compute_shap_values(explainer, X_test)
     print(f"  SHAP explanation computed for {explanation.shape[0]} test samples across {explanation.shape[1]} features.")
-    base_val = float(explanation.base_values[0]) if hasattr(explanation.base_values, "__getitem__") else float(explanation.base_values)
-    print(f"  Base value (expected log-odds output E[f(x)]): {base_val:.4f}")
+    base_val = float(np.mean(explanation.base_values))
+    print(f"  Base value (expected output E[f(x)]): {base_val:.4f}")
 
     # 4. Global Feature Importance
     print("\n[Step 4/8] Computing global SHAP feature importance...")
@@ -101,9 +102,7 @@ def run_full_shap_pipeline() -> None:
 
     # 6. Feature Effect / Dependence Plots
     print("\n[Step 6/8] Generating SHAP Dependence plots for top features...")
-    # Select top 5 features dynamically from SHAP importance
     top_features = df_shap_imp["Feature"].head(5).tolist()
-    # Ensure at least Glucose, BMI, Age are present
     for must_have in ["Glucose", "BMI", "Age", "DiabetesPedigreeFunction", "Pregnancies"]:
         if must_have in FEATURE_COLUMNS and must_have not in top_features:
             top_features.append(must_have)
@@ -115,17 +114,23 @@ def run_full_shap_pipeline() -> None:
 
     # 7. Local Patient Explanations (Waterfall Plots)
     print("\n[Step 7/8] Generating individual patient prediction explanations (Waterfall)...")
-    # Generate predictions and probabilities for test set
-    test_probs = model.predict_proba(X_test)[:, 1]
-    test_preds = model.predict(X_test)
+    meta = load_metadata()
+    threshold = 0.50
+    if meta and "models" in meta:
+        best_name = meta.get("best_model_name", "Random Forest")
+        threshold = meta["models"].get(best_name, {}).get("optimal_threshold", 0.50)
 
-    # Programmatically select representative positive and negative cases
-    # High confidence positive case: true label 1, highest predicted probability
+    test_probs = model.predict_proba(X_test)[:, 1]
+    test_preds = (test_probs >= threshold).astype(int)
+
     pos_candidates = np.where((y_test.values == 1) & (test_preds == 1))[0]
+    if len(pos_candidates) == 0:
+        pos_candidates = np.where(y_test.values == 1)[0]
     pos_idx = pos_candidates[np.argmax(test_probs[pos_candidates])]
 
-    # High confidence negative case: true label 0, lowest predicted probability
     neg_candidates = np.where((y_test.values == 0) & (test_preds == 0))[0]
+    if len(neg_candidates) == 0:
+        neg_candidates = np.where(y_test.values == 0)[0]
     neg_idx = neg_candidates[np.argmin(test_probs[neg_candidates])]
 
     pos_prob = test_probs[pos_idx]
@@ -150,8 +155,8 @@ def run_full_shap_pipeline() -> None:
         )
     print("  Saved positive_prediction_waterfall.png and negative_prediction_waterfall.png")
 
-    # 8. Compare XGBoost Native Importance vs SHAP Importance
-    print("\n[Step 8/8] Comparing XGBoost native importance vs SHAP mean absolute importance...")
+    # 8. Compare Model Native Importance vs SHAP Importance
+    print(f"\n[Step 8/8] Comparing {model_type} native importance vs SHAP mean absolute importance...")
     for d in [results_dir, explain_results_dir]:
         df_comparison = compare_feature_importance(
             model=model,
@@ -198,19 +203,24 @@ def generate_interpretation_report(
     Generate a rigorous markdown interpretation report adhering to medical-AI boundaries.
     """
     top_3_shap = df_shap_imp["Feature"].head(3).tolist()
+    native_col = [c for c in df_comparison.columns if "Importance" in c and "Mean" not in c][0]
+    native_rank_col = [c for c in df_comparison.columns if "Rank" in c and "SHAP" not in c][0]
+
+    pos_base = float(np.atleast_1d(pos_exp.base_values)[0])
+    neg_base = float(np.atleast_1d(neg_exp.base_values)[0])
 
     report_content = f"""# SHAP Model Explainability & Clinical Risk Interpretation Report
 
 **Project:** Explainable Diabetes Risk Prediction Using Machine Learning  
-**Explained Model:** {model_type} (Selected Best Model)  
+**Explained Model:** {model_type} (Selected Best Model via Leak-Free CV)  
 **Evaluation Set:** Untouched Test Partition ($N = 154$ patients, 8 clinical features)  
-**Explainer Algorithm:** SHAP `TreeExplainer` (Tree SHAP exact formulation)
+**Explainer Algorithm:** SHAP `TreeExplainer` (Tree SHAP formulation)
 
 ---
 
 ## 1. Executive Summary & Top Global Risk Factors
 
-Global explainability reveals that the trained XGBoost model relies predominantly on metabolic and demographic biomarkers when assessing diabetes risk. 
+Global explainability reveals that the trained {model_type} relies predominantly on metabolic and demographic biomarkers when assessing diabetes risk. 
 
 According to mean absolute SHAP values ($\\mathbb{{E}}[|\\phi_i|]$), the top global predictive features are:
 1. **{df_shap_imp.iloc[0]['Feature']}** (Mean |SHAP| = {df_shap_imp.iloc[0]['Mean_Absolute_SHAP']:.4f})
@@ -226,27 +236,27 @@ Together, **{top_3_shap[0]}**, **{top_3_shap[1]}**, and **{top_3_shap[2]}** acco
 
 Analysis of the SHAP Beeswarm distribution plot (`shap_summary_beeswarm.png`) demonstrates how varying feature values influence the predicted log-odds of diabetes:
 
-- **Glucose:** High plasma glucose values (red dots) strongly push predictions toward higher log-odds (positive SHAP values up to +2.5), whereas low-to-normal glucose values push predictions toward lower risk (negative SHAP values down to -1.0).
+- **Glucose:** High plasma glucose values (red dots) strongly push predictions toward higher risk (positive SHAP values), whereas normal or lower glucose values push predictions toward lower risk (negative SHAP values).
 - **BMI:** Elevated body mass index consistently increases predicted risk, while lower BMI values exhibit protective, risk-lowering effects in the model's logic.
 - **Age:** Older patient age displays a positive predictive contribution, aligning with clinical evidence that diabetes risk increases with chronological aging.
 - **Diabetes Pedigree Function:** Higher genetic risk scores correlate with positive SHAP contributions, particularly when combined with elevated glucose or BMI.
-- **Pregnancies:** Higher parity (number of pregnancies) contributes positively to estimated diabetes risk, reflecting gestational metabolic stress.
-- **Insulin & Blood Pressure:** Moderate-to-high values introduce non-linear positive contributions, though with lower overall magnitude than glucose and BMI.
+- **Pregnancies:** Higher parity contributes positively to estimated diabetes risk, reflecting gestational metabolic stress.
+- **Insulin & Blood Pressure:** Moderate-to-high values introduce positive contributions, though with lower overall magnitude than glucose and BMI.
 
 ---
 
-## 3. Native XGBoost Importance vs. SHAP Importance Comparison
+## 3. Native Model Importance vs. SHAP Importance Comparison
 
-| Feature | XGBoost Native Gain | Mean Absolute SHAP | XGBoost Rank | SHAP Rank |
+| Feature | {model_type} Native Importance | Mean Absolute SHAP | Native Rank | SHAP Rank |
 | :--- | :---: | :---: | :---: | :---: |
 """
 
     for _, row in df_comparison.iterrows():
-        report_content += f"| **{row['Feature']}** | {row['XGBoost_Importance']:.4f} | {row['Mean_Absolute_SHAP']:.4f} | {row['XGBoost_Rank']} | {row['SHAP_Rank']} |\n"
+        report_content += f"| **{row['Feature']}** | {row[native_col]:.4f} | {row['Mean_Absolute_SHAP']:.4f} | {row[native_rank_col]} | {row['SHAP_Rank']} |\n"
 
     report_content += f"""
 ### Key Insights from Comparison:
-- **Consensus at the Top:** Both XGBoost native gain and SHAP identify **Glucose** (Rank 1), **BMI** (Rank 2), and **Age** (Rank 3) as the primary predictive drivers.
+- **Consensus at the Top:** Both native tree importance and SHAP identify **Glucose** (Rank 1), **BMI** (Rank 2), and **Age** (Rank 3) as the primary predictive drivers.
 - **Ranking Discrepancies:** Native tree importance evaluates splits based solely on training loss reduction, often favoring features utilized near tree roots. In contrast, SHAP evaluates marginal contributions across all feature coalitions on unseen test data, providing a more balanced assessment of test-time generalization influence.
 
 ---
@@ -256,7 +266,7 @@ Analysis of the SHAP Beeswarm distribution plot (`shap_summary_beeswarm.png`) de
 Local explainability allows clinicians to examine why the model produced a specific prediction for an individual patient.
 
 ### Case 1: High-Risk Patient (Predicted Probability: {pos_prob:.1%})
-- **Base Log-Odds ($E[f(x)]$):** {float(pos_exp.base_values):.4f}
+- **Base Expected Value ($E[f(x)]$):** {pos_base:.4f}
 - **Top Risk-Increasing Factors:**
 """
 
@@ -270,10 +280,10 @@ Local explainability allows clinicians to examine why the model produced a speci
         report_content += f"  - **{f}** = {v:.1f} (SHAP contribution: +{s:.3f})\n"
 
     report_content += f"""
-- **Outcome:** The cumulative positive contributions pushed the model's output significantly above the decision threshold, resulting in a high-risk prediction ({pos_prob:.1%}).
+- **Outcome:** Cumulative positive contributions pushed the model's probability above the decision threshold, resulting in a high-risk prediction ({pos_prob:.1%}).
 
 ### Case 2: Low-Risk Patient (Predicted Probability: {neg_prob:.1%})
-- **Base Log-Odds ($E[f(x)]$):** {float(neg_exp.base_values):.4f}
+- **Base Expected Value ($E[f(x)]$):** {neg_base:.4f}
 - **Top Protective Factors:**
 """
 

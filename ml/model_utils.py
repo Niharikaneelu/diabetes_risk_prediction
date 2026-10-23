@@ -2,12 +2,13 @@
 Model utilities and helper functions for diabetes risk prediction ML pipeline.
 
 Includes data loading, stratified train-test splitting without data leakage,
-evaluation visualization (confusion matrix, ROC curve, feature importance),
-and results persistence.
+evaluation visualization (confusion matrix, ROC curve, PR curve, feature importance),
+and results/metadata persistence.
 """
 
+import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import pickle
 import joblib
 import matplotlib.pyplot as plt
@@ -114,10 +115,29 @@ def split_data(
     return X_train, X_test, y_train, y_test
 
 
+def fit_imputer(X_train: pd.DataFrame) -> Dict[str, float]:
+    """
+    Compute imputation medians strictly from training partition.
+    """
+    return {col: float(X_train[col].median()) for col in ZERO_AS_MISSING if col in X_train.columns}
+
+
+def apply_imputer(X: pd.DataFrame, medians: Dict[str, float]) -> pd.DataFrame:
+    """
+    Apply precomputed medians to impute missing values in feature DataFrame.
+    """
+    X_imputed = X.copy()
+    for col, med_val in medians.items():
+        if col in X_imputed.columns:
+            X_imputed[col] = X_imputed[col].fillna(med_val)
+    return X_imputed
+
+
 def generate_confusion_matrix(
     y_true: Union[pd.Series, np.ndarray],
     y_pred: Union[pd.Series, np.ndarray],
     model_name: str,
+    threshold: Optional[float] = None,
     output_path: Optional[Union[str, Path]] = None,
 ) -> plt.Figure:
     """
@@ -146,9 +166,10 @@ def generate_confusion_matrix(
         yticklabels=["Non-Diabetic (0)", "Diabetic (1)"],
         annot_kws={"size": 13, "weight": "bold"},
     )
-    plt.title(f"Confusion Matrix: {model_name}", fontsize=14, pad=12, weight="bold")
-    plt.xlabel("Predicted Label", fontsize=12, labelpad=8)
-    plt.ylabel("Actual Label", fontsize=12, labelpad=8)
+    title_suffix = f" (Threshold = {threshold:.2f})" if threshold is not None else ""
+    plt.title(f"Confusion Matrix: {model_name}{title_suffix}", fontsize=13, pad=12, weight="bold")
+    plt.xlabel("Predicted Label", fontsize=11, labelpad=8)
+    plt.ylabel("Actual Label", fontsize=11, labelpad=8)
     plt.tight_layout()
 
     fig = plt.gcf()
@@ -190,10 +211,56 @@ def generate_roc_curve(
     plt.plot([0, 1], [0, 1], "k--", label="Random Classifier (AUC = 0.5000)", linewidth=1.5)
     plt.xlim([-0.02, 1.02])
     plt.ylim([-0.02, 1.05])
-    plt.xlabel("False Positive Rate (1 - Specificity)", fontsize=12, labelpad=8)
-    plt.ylabel("True Positive Rate (Sensitivity / Recall)", fontsize=12, labelpad=8)
-    plt.title("ROC Curves Comparison: Random Forest vs XGBoost", fontsize=14, pad=12, weight="bold")
+    plt.xlabel("False Positive Rate (1 - Specificity)", fontsize=11, labelpad=8)
+    plt.ylabel("True Positive Rate (Sensitivity / Recall)", fontsize=11, labelpad=8)
+    plt.title("ROC Curves Comparison: Random Forest vs XGBoost", fontsize=13, pad=12, weight="bold")
     plt.legend(loc="lower right", fontsize=11, frameon=True)
+    plt.tight_layout()
+
+    fig = plt.gcf()
+    if output_path:
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    return fig
+
+
+def generate_pr_curve(
+    y_true: Union[pd.Series, np.ndarray],
+    probs_dict: Dict[str, np.ndarray],
+    output_path: Optional[Union[str, Path]] = None,
+) -> plt.Figure:
+    """
+    Generate a Precision-Recall curve comparing all models on the same plot.
+    """
+    from sklearn.metrics import precision_recall_curve, average_precision_score
+
+    plt.figure(figsize=(7, 6))
+    sns.set_theme(style="whitegrid")
+
+    palette = {"Random Forest": "#1f77b4", "XGBoost": "#ff7f0e"}
+    pos_prevalence = np.mean(y_true)
+
+    for name, probs in probs_dict.items():
+        precision, recall, _ = precision_recall_curve(y_true, probs)
+        ap = average_precision_score(y_true, probs)
+        color = palette.get(name, None)
+        plt.plot(
+            recall,
+            precision,
+            label=f"{name} (PR-AUC / AP = {ap:.4f})",
+            linewidth=2.5,
+            color=color,
+        )
+
+    plt.plot([0, 1], [pos_prevalence, pos_prevalence], "k--", label=f"Prevalence Baseline ({pos_prevalence:.2f})", linewidth=1.5)
+    plt.xlim([-0.02, 1.02])
+    plt.ylim([-0.02, 1.05])
+    plt.xlabel("Recall (Sensitivity)", fontsize=11, labelpad=8)
+    plt.ylabel("Precision (Positive Predictive Value)", fontsize=11, labelpad=8)
+    plt.title("Precision-Recall Curves Comparison", fontsize=13, pad=12, weight="bold")
+    plt.legend(loc="lower left", fontsize=10, frameon=True)
     plt.tight_layout()
 
     fig = plt.gcf()
@@ -212,8 +279,7 @@ def generate_metric_comparison(
     """
     Generate a grouped bar chart comparing performance across multiple metrics.
     """
-    # Reshape comparison_df from wide to long for seaborn
-    metrics = ["Accuracy", "Precision", "Recall", "F1_Score", "ROC_AUC"]
+    metrics = ["Accuracy", "Precision", "Recall", "F1_Score", "ROC_AUC", "PR_AUC"]
     available_metrics = [m for m in metrics if m in comparison_df.columns]
 
     df_melted = comparison_df.melt(
@@ -223,7 +289,7 @@ def generate_metric_comparison(
         value_name="Score",
     )
 
-    plt.figure(figsize=(9, 5.5))
+    plt.figure(figsize=(9.5, 5.5))
     sns.set_theme(style="whitegrid")
 
     ax = sns.barplot(
@@ -234,13 +300,12 @@ def generate_metric_comparison(
         palette=["#2b5c8f", "#d95f02"],
     )
 
-    plt.title("Model Performance Comparison on Test Set", fontsize=14, pad=12, weight="bold")
+    plt.title("Model Performance Comparison on Test Set", fontsize=13, pad=12, weight="bold")
     plt.ylim(0.0, 1.08)
-    plt.ylabel("Score", fontsize=12)
-    plt.xlabel("Evaluation Metric", fontsize=12)
+    plt.ylabel("Score", fontsize=11)
+    plt.xlabel("Evaluation Metric", fontsize=11)
     plt.legend(title="Model", title_fontsize="11", fontsize=10, loc="upper right")
 
-    # Add numeric labels on top of bars
     for p in ax.patches:
         height = p.get_height()
         if not np.isnan(height) and height > 0:
@@ -249,7 +314,7 @@ def generate_metric_comparison(
                 (p.get_x() + p.get_width() / 2.0, height),
                 ha="center",
                 va="bottom",
-                fontsize=9.5,
+                fontsize=9.0,
                 weight="semibold",
                 xytext=(0, 3),
                 textcoords="offset points",
@@ -283,9 +348,9 @@ def generate_feature_importance_plot(
     color = "#2b5c8f" if "Random Forest" in model_name else "#d95f02"
     bars = plt.barh(df_imp["Feature"], df_imp["Importance"], color=color, alpha=0.85)
 
-    plt.title(f"Feature Importance ({model_name})", fontsize=14, pad=12, weight="bold")
-    plt.xlabel("Relative Importance Score", fontsize=12, labelpad=8)
-    plt.ylabel("Feature", fontsize=12, labelpad=8)
+    plt.title(f"Feature Importance ({model_name})", fontsize=13, pad=12, weight="bold")
+    plt.xlabel("Relative Importance Score", fontsize=11, labelpad=8)
+    plt.ylabel("Feature", fontsize=11, labelpad=8)
 
     max_val = df_imp["Importance"].max()
     plt.xlim(0, max_val * 1.15)
@@ -316,9 +381,10 @@ def save_models(
     models_dict: Dict[str, object],
     best_model_name: str,
     directories: List[Union[str, Path]],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
-    Persist trained models in .pkl and .joblib formats across specified directories.
+    Persist trained models in .pkl and .joblib formats and metadata across specified directories.
     """
     for d in directories:
         target_dir = Path(d)
@@ -339,6 +405,11 @@ def save_models(
             pickle.dump(best_model, f)
         joblib.dump(best_model, target_dir / "best_model.joblib")
 
+        # Save metadata if provided
+        if metadata is not None:
+            with open(target_dir / "metadata.json", "w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2)
+
 
 def save_results(
     metrics_df: pd.DataFrame,
@@ -358,3 +429,19 @@ def save_results(
         cv_results_df.to_csv(target_dir / "cross_validation_results.csv", index=False)
         comparison_df.to_csv(target_dir / "model_comparison.csv", index=False)
         predictions_df.to_csv(target_dir / "predictions.csv", index=False)
+
+
+def load_metadata(model_dir: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+    """
+    Load metadata.json from model directory.
+    """
+    if model_dir is None:
+        model_dir = get_project_root() / "models"
+    meta_path = Path(model_dir) / "metadata.json"
+    if not meta_path.exists():
+        # Fallback to ml/models
+        meta_path = get_project_root() / "ml" / "models" / "metadata.json"
+    if not meta_path.exists():
+        return {}
+    with open(meta_path, "r", encoding="utf-8") as f:
+        return json.load(f)

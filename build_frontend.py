@@ -201,7 +201,11 @@ html_content = f'''<!DOCTYPE html>
         <!-- Navigation Tabs -->
         <nav class="hidden xl:inline-flex items-center gap-space-xs p-1 bg-surface-container-low rounded-xl w-fit shrink-0" id="navTabs">
           <button id="nav-risk-prediction" class="px-space-md py-1.5 rounded-lg transition-all bg-primary text-on-primary shadow-sm font-semibold text-label-md" onclick="switchTab('risk-prediction')">
-            Risk Prediction
+            Risk Assessment
+          </button>
+          <button id="nav-prediction-results" class="flex items-center gap-1.5 px-space-md py-1.5 rounded-lg text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" onclick="switchTab('prediction-results')">
+            <span>Prediction Results</span>
+            <span id="navResultsBadge" class="hidden px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[11px] font-bold">Ready</span>
           </button>
           <button id="nav-explainability-xai" class="flex items-center gap-1.5 px-space-md py-1.5 rounded-lg text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" onclick="switchTab('explainability-xai')">
             <span id="shapNavBadge" class="px-1.5 py-0.5 rounded bg-primary-fixed text-primary text-[11px] font-bold">SHAP</span>
@@ -214,29 +218,7 @@ html_content = f'''<!DOCTYPE html>
       </div>
 
       <!-- Right Action Items -->
-      <div class="flex items-center gap-space-sm sm:gap-space-md">
-        <!-- Cohort Switcher -->
-        <div class="relative">
-          <button class="flex items-center gap-space-xs px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-surface-container text-on-surface text-label-md hover:bg-surface-container-high transition-colors" type="button" onclick="toggleCohortDropdown()">
-            <span class="material-symbols-outlined text-secondary text-[18px]">assignment_ind</span>
-            <span id="currentCohortLabel" class="hidden sm:inline">Cohort 04</span>
-            <span class="material-symbols-outlined text-on-surface-variant text-[16px]">expand_more</span>
-          </button>
-          <!-- Dropdown -->
-          <div id="cohortDropdown" class="hidden absolute right-0 mt-2 w-64 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/40 py-2 z-50">
-            <div class="px-3 py-1 text-[11px] font-semibold text-outline uppercase tracking-wider">Clinical Cohorts</div>
-            <button class="w-full text-left px-3 py-2 text-label-md hover:bg-surface-container flex items-center gap-2" onclick="loadCohort('high'); closeCohortDropdown();">
-              <span class="w-2 h-2 rounded-full bg-error"></span> Case A: Elevated Glycemia (68%)
-            </button>
-            <button class="w-full text-left px-3 py-2 text-label-md hover:bg-surface-container flex items-center gap-2" onclick="loadCohort('low'); closeCohortDropdown();">
-              <span class="w-2 h-2 rounded-full bg-tertiary"></span> Case B: Normoglycemic (14%)
-            </button>
-            <button class="w-full text-left px-3 py-2 text-label-md hover:bg-surface-container flex items-center gap-2" onclick="loadCohort('moderate'); closeCohortDropdown();">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span> Case C: Impaired Glucose (46%)
-            </button>
-          </div>
-        </div>
-      </div>
+      <div class="flex items-center gap-space-sm sm:gap-space-md"></div>
     </div>
   </header>
 
@@ -263,16 +245,16 @@ html_content = f'''<!DOCTYPE html>
             </span>
             <div>
               <span class="text-label-sm uppercase tracking-wider text-outline font-semibold block">Active Predictive Architecture</span>
-              <span class="text-label-lg font-bold text-on-surface" id="bannerModelTitle">XGBoost Classifier (Tuned • ROC-AUC 0.841)</span>
+              <span class="text-label-lg font-bold text-on-surface" id="bannerModelTitle">Random Forest Classifier (Selected Best • Threshold: 0.48)</span>
             </div>
           </div>
           <!-- Toggle Buttons -->
           <div class="flex items-center gap-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/30">
-            <button id="toggleBtnXgb" class="px-4 py-1.5 rounded-lg text-label-md font-bold transition-all bg-primary text-on-primary shadow-xs" onclick="changeModel('xgboost')">
-              XGBoost (Best)
+            <button id="toggleBtnRf" class="px-4 py-1.5 rounded-lg text-label-md font-bold transition-all bg-primary text-on-primary shadow-xs" onclick="changeModel('random_forest')">
+              Random Forest (Best)
             </button>
-            <button id="toggleBtnRf" class="px-4 py-1.5 rounded-lg text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="changeModel('random_forest')">
-              Random Forest
+            <button id="toggleBtnXgb" class="px-4 py-1.5 rounded-lg text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="changeModel('xgboost')">
+              XGBoost
             </button>
           </div>
         </div>
@@ -287,24 +269,12 @@ html_content = f'''<!DOCTYPE html>
                 Understand Your Diabetes Risk
               </h1>
               <p class="text-body-md text-on-surface-variant max-w-2xl">
-                High-dimensional risk estimation combining biometric clinical parameters with transparent, feature-level attribution calculated via Shapley additive explanations (SHAP).
+                Statistical risk estimation combining biometric clinical parameters with transparent, feature-level attribution calculated via Shapley additive explanations (SHAP).
               </p>
               
-              <!-- Cohort Quick Load Strip -->
-              <div class="flex items-center gap-2 mt-3 flex-nowrap overflow-x-auto py-1">
-                <span class="text-label-sm uppercase tracking-wider text-outline font-semibold whitespace-nowrap shrink-0">Quick Presets:</span>
-                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-container/40 text-on-error-container hover:bg-error-container/70 text-label-sm transition-colors font-medium whitespace-nowrap shrink-0" onclick="loadCohort('high')" type="button">
-                  <span class="w-2 h-2 rounded-full bg-error shrink-0"></span>
-                  Case A: Elevated Glycemia (High Risk)
-                </button>
-                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm transition-colors font-medium whitespace-nowrap shrink-0" onclick="loadCohort('low')" type="button">
-                  <span class="w-2 h-2 rounded-full bg-tertiary shrink-0"></span>
-                  Case B: Normoglycemic (Low Risk)
-                </button>
-                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100/70 hover:bg-amber-100 text-amber-900 text-label-sm transition-colors font-medium whitespace-nowrap shrink-0" onclick="loadCohort('moderate')" type="button">
-                  <span class="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
-                  Case C: Impaired Glucose (Moderate)
-                </button>
+              <div class="flex items-center gap-2 mt-3 text-label-sm text-outline">
+                <span class="material-symbols-outlined text-[16px] text-primary">touch_app</span>
+                <span>Select a clinical test scenario below or enter custom biometrics into the form</span>
               </div>
             </div>
 
@@ -316,7 +286,7 @@ html_content = f'''<!DOCTYPE html>
                     <span class="material-symbols-outlined text-[16px] text-primary">hub</span>
                     Biometric Feature Tensor
                   </span>
-                  <span class="text-label-sm text-secondary bg-surface px-2 py-0.5 rounded-full font-medium" id="heroModelBadge">XGBoost calibrated</span>
+                  <span class="text-label-sm text-secondary bg-surface px-2 py-0.5 rounded-full font-medium" id="heroModelBadge">Random Forest Active</span>
                 </div>
                 <!-- Abstract SVG Biological Neural Mesh -->
                 <svg class="w-full h-24 overflow-visible" fill="none" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
@@ -333,45 +303,161 @@ html_content = f'''<!DOCTYPE html>
                   </g>
                   <!-- Vertical Data Scan Line -->
                   <line opacity="0.3" stroke="#0053db" stroke-dasharray="2 2" stroke-width="1.5" x1="160" x2="160" y1="0" y2="90"></line>
-                  <text class="text-[9px]" fill="#434655" x="165" y="14" font-weight="500">Mean Baseline 0.35</text>
+                  <text class="text-[9px]" fill="#434655" x="165" y="14" font-weight="500">Base Expected Value</text>
                 </svg>
                 <div class="flex items-center justify-between text-label-sm text-on-surface-variant pt-2">
-                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary" id="legendDot"></span><span id="legendText">XGBoost Predictor</span></span>
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary" id="legendDot"></span><span id="legendText">Random Forest Predictor</span></span>
                   <span class="flex items-center gap-1 cursor-pointer font-semibold text-secondary hover:underline" onclick="scrollToShap()"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>SHAP Attribution</span>
-                  <span class="text-tertiary font-semibold">99.8% Parsed</span>
+                  <span class="text-tertiary font-semibold">Ready</span>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Main Workstation Layout: 7 cols Form / 5 cols Result -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-10">
-          
-          <!-- LEFT COLUMN: Patient Information & Clinical Measurements (7 Columns) -->
-          <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col gap-6">
-            <div class="flex items-center justify-between pb-3">
+        <!-- ========================================================================= -->
+        <!-- CLINICAL TEST CASES (Clickable Scenario Cards)                             -->
+        <!-- ========================================================================= -->
+        <section class="w-full mb-8">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[20px]">science</span>
+              </span>
               <div>
-                <h2 class="text-headline-sm text-on-surface font-bold">Patient Information</h2>
+                <h2 class="text-headline-sm text-on-surface font-bold text-[18px] leading-tight">Clinical Test Cases</h2>
+                <span class="text-body-sm text-on-surface-variant font-normal">Predefined benchmark scenarios to evaluate model risk predictions and local SHAP explanations</span>
+              </div>
+            </div>
+            <span class="text-label-sm text-outline font-medium flex items-center gap-1 self-start sm:self-auto bg-surface-container-low px-3 py-1 rounded-full border border-outline-variant/30">
+              <span class="material-symbols-outlined text-[16px] text-primary">touch_app</span> Click card to select
+            </span>
+          </div>
+
+          <!-- 3-Column Responsive Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="testCaseGrid">
+            
+            <!-- Card 1: Test 01 -->
+            <div id="testCard-01" class="test-case-card group relative p-4 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3" onclick="selectTestCase('test-01')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();selectTestCase('test-01');}}" role="button" tabindex="0" aria-pressed="false" title="Click to select Test 01 scenario">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="test-badge-num px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tracking-wider bg-surface-container text-outline border border-outline-variant/40">TEST 01</span>
+                  <h3 class="text-label-lg font-bold text-on-surface">Elevated Glycemia</h3>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-error-container text-on-error-container shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                  Elevated Risk Profile
+                </span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                Case A: Marked post-challenge hyperglycemia with elevated body mass index and familial history.
+              </p>
+              <div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-between text-label-sm">
+                <span class="font-code-num text-on-surface-variant text-[12px] font-medium">Glucose 154 • BMI 31.4 • Age 48</span>
+                <span class="text-outline font-medium flex items-center gap-1 text-[12px] group-hover:text-primary">
+                  <span class="material-symbols-outlined text-[16px] test-card-status-icon">radio_button_unchecked</span>
+                  <span class="test-card-status-text">Select</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Card 2: Test 02 -->
+            <div id="testCard-02" class="test-case-card group relative p-4 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3" onclick="selectTestCase('test-02')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();selectTestCase('test-02');}}" role="button" tabindex="0" aria-pressed="false" title="Click to select Test 02 scenario">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="test-badge-num px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tracking-wider bg-surface-container text-outline border border-outline-variant/40">TEST 02</span>
+                  <h3 class="text-label-lg font-bold text-on-surface">Normoglycemic Baseline</h3>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-tertiary-container/50 text-on-tertiary-fixed-variant shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                  Lower Risk Profile
+                </span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                Case B: Normal fasting &amp; post-challenge glucose profile with healthy biometric markers.
+              </p>
+              <div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-between text-label-sm">
+                <span class="font-code-num text-on-surface-variant text-[12px] font-medium">Glucose 88 • BMI 21.8 • Age 28</span>
+                <span class="text-outline font-medium flex items-center gap-1 text-[12px] group-hover:text-primary">
+                  <span class="material-symbols-outlined text-[16px] test-card-status-icon">radio_button_unchecked</span>
+                  <span class="test-card-status-text">Select</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Card 3: Test 03 -->
+            <div id="testCard-03" class="test-case-card group relative p-4 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3" onclick="selectTestCase('test-03')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();selectTestCase('test-03');}}" role="button" tabindex="0" aria-pressed="false" title="Click to select Test 03 scenario">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="test-badge-num px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tracking-wider bg-surface-container text-outline border border-outline-variant/40">TEST 03</span>
+                  <h3 class="text-label-lg font-bold text-on-surface">Impaired Fasting Glucose</h3>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  Moderate Risk Profile
+                </span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                Case C: Borderline glycemic markers near the decision boundary with intermediate adiposity.
+              </p>
+              <div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-between text-label-sm">
+                <span class="font-code-num text-on-surface-variant text-[12px] font-medium">Glucose 126 • BMI 28.2 • Age 41</span>
+                <span class="text-outline font-medium flex items-center gap-1 text-[12px] group-hover:text-primary">
+                  <span class="material-symbols-outlined text-[16px] test-card-status-icon">radio_button_unchecked</span>
+                  <span class="test-card-status-text">Select</span>
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Assessment Error Banner (Shown if inference fails) -->
+        <div id="assessmentErrorBanner" class="hidden w-full mb-6 p-4 rounded-xl bg-error-container text-on-error-container border border-error/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[24px] text-error shrink-0">error</span>
+            <div>
+              <h4 class="text-label-md font-bold text-on-error-container" id="errorBannerTitle">Inference Service Unreachable</h4>
+              <p class="text-body-sm text-on-error-container/90 mt-0.5" id="errorBannerMsg">Backend Error: Could not connect to inference service.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+            <button class="px-3.5 py-1.5 rounded-lg bg-error text-on-error hover:bg-error/90 text-label-sm font-semibold flex items-center gap-1 shadow-xs transition-colors" onclick="calculateRisk()" type="button">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>
+              Retry Inference
+            </button>
+            <button class="px-2.5 py-1.5 rounded-lg text-label-sm font-medium hover:bg-error-container/80 transition-colors" onclick="dismissErrorBanner()" type="button">
+              Dismiss
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Workstation: Patient Information & Clinical Measurements Form -->
+        <div class="w-full bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col gap-6 min-w-0 border border-outline-variant/30 mb-8">
+
+            <!-- Patient Information Introduction -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/20 w-full">
+              <div>
+                <h2 class="text-headline-sm text-on-surface font-bold text-[22px]">Patient Information</h2>
                 <p class="text-body-sm text-on-surface-variant mt-0.5">Enter standard physiological markers to evaluate individualized metabolic risk.</p>
               </div>
-              <span class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm">
-                <span class="material-symbols-outlined text-[14px]">checklist</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm shrink-0 self-start sm:self-auto font-medium">
+                <span class="material-symbols-outlined text-[15px]">checklist</span>
                 8 Features Required
               </span>
             </div>
 
-            <form class="flex flex-col gap-6" id="predictionForm" onsubmit="event.preventDefault(); calculateRisk();">
+            <form class="flex flex-col gap-6 w-full min-w-0" id="predictionForm" onsubmit="event.preventDefault(); calculateRisk();">
               
-              <!-- Subsection 1: Demographics -->
-              <div>
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="w-6 h-6 rounded-md bg-surface-container text-primary flex items-center justify-center text-label-sm font-bold">1</span>
-                  <h3 class="text-label-lg text-on-surface font-semibold">Demographic Profile</h3>
+              <!-- Section 1: Demographic Profile -->
+              <div class="flex flex-col gap-3 w-full">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-primary-fixed/60 text-primary flex items-center justify-center text-label-sm font-bold">1</span>
+                  <h3 class="text-label-lg text-on-surface font-semibold text-[17px]">Demographic Profile</h3>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full">
                   <!-- Age Field -->
-                  <div class="flex flex-col gap-1.5">
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputAge">
                         Age
@@ -379,10 +465,10 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">years</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputAge" max="100" min="18" placeholder="e.g. 48" type="number" value="48" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputAge" max="100" min="18" placeholder="e.g. 48" type="number" value="" required/>
                   </div>
                   <!-- Pregnancies Field -->
-                  <div class="flex flex-col gap-1.5">
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputPregnancies">
                         Pregnancies
@@ -390,20 +476,20 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">count</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputPregnancies" max="20" min="0" placeholder="e.g. 2" type="number" value="2" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputPregnancies" max="20" min="0" placeholder="e.g. 2" type="number" value="" required/>
                   </div>
                 </div>
               </div>
 
-              <!-- Subsection 2: Clinical Biometrics -->
-              <div>
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="w-6 h-6 rounded-md bg-surface-container text-primary flex items-center justify-center text-label-sm font-bold">2</span>
-                  <h3 class="text-label-lg text-on-surface font-semibold">Clinical & Laboratory Measurements</h3>
+              <!-- Section 2: Clinical & Laboratory Measurements -->
+              <div class="flex flex-col gap-3.5 w-full">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-primary-fixed/60 text-primary flex items-center justify-center text-label-sm font-bold">2</span>
+                  <h3 class="text-label-lg text-on-surface font-semibold text-[17px]">Clinical &amp; Laboratory Measurements</h3>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <!-- Glucose Field -->
-                  <div class="flex flex-col gap-1.5 sm:col-span-2 p-3.5 rounded-xl bg-surface-container-low/60 border border-outline-variant/30">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full">
+                  <!-- Glucose Field (Full Width Highlighted Measurement Row) -->
+                  <div class="sm:col-span-2 p-3.5 sm:p-4 rounded-xl bg-surface-container-low/70 border border-outline-variant/30 flex flex-col gap-2 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-semibold flex items-center gap-1" for="inputGlucose">
                         Glucose (2-hr OGTT)
@@ -411,19 +497,19 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-on-surface-variant font-medium">mg/dL</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                      <div class="relative flex-1">
-                        <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container transition-colors" id="inputGlucose" max="300" min="40" type="number" value="154" required/>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                      <div class="relative flex-1 min-w-0">
+                        <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container transition-colors" id="inputGlucose" max="300" min="40" placeholder="e.g. 154" type="number" value="" required/>
                       </div>
-                      <div class="flex flex-col text-right">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-label-sm font-semibold" id="glucoseBadge">Elevated (≥126)</span>
+                      <div class="flex flex-col sm:items-end text-left sm:text-right shrink-0">
+                        <span class="hidden" id="glucoseBadge"></span>
                         <span class="text-[10px] text-outline mt-0.5">Ref: Normal &lt;100 mg/dL</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Blood Pressure -->
-                  <div class="flex flex-col gap-1.5">
+                  <!-- Blood Pressure Field -->
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputBP">
                         Blood Pressure
@@ -431,11 +517,11 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">mm Hg</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputBP" max="160" min="30" type="number" value="78" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputBP" max="160" min="30" placeholder="e.g. 78" type="number" value="" required/>
                   </div>
 
                   <!-- BMI Field -->
-                  <div class="flex flex-col gap-1.5">
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputBMI">
                         Body Mass Index (BMI)
@@ -443,11 +529,11 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">kg/m²</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputBMI" max="70" min="10" step="0.1" type="number" value="31.4" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputBMI" max="70" min="10" step="0.1" placeholder="e.g. 31.4" type="number" value="" required/>
                   </div>
 
-                  <!-- Insulin Field -->
-                  <div class="flex flex-col gap-1.5">
+                  <!-- Serum Insulin Field -->
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputInsulin">
                         Serum Insulin
@@ -455,11 +541,11 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">µU/mL</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputInsulin" max="900" min="0" type="number" value="130" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputInsulin" max="900" min="0" placeholder="e.g. 130" type="number" value="" required/>
                   </div>
 
-                  <!-- Skin Thickness -->
-                  <div class="flex flex-col gap-1.5">
+                  <!-- Triceps Skinfold Field -->
+                  <div class="flex flex-col gap-1.5 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputSkin">
                         Triceps Skinfold
@@ -467,28 +553,28 @@ html_content = f'''<!DOCTYPE html>
                       </label>
                       <span class="text-label-sm text-outline">mm</span>
                     </div>
-                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputSkin" max="99" min="0" type="number" value="32" required/>
+                    <input class="w-full h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputSkin" max="99" min="0" placeholder="e.g. 32" type="number" value="" required/>
                   </div>
 
-                  <!-- Diabetes Pedigree Function -->
-                  <div class="flex flex-col gap-1.5 sm:col-span-2">
+                  <!-- Diabetes Pedigree Function Field -->
+                  <div class="flex flex-col gap-1.5 sm:col-span-2 w-full min-w-0">
                     <div class="flex items-center justify-between">
                       <label class="text-label-md text-on-surface font-medium flex items-center gap-1" for="inputPedigree">
                         Diabetes Pedigree Function
-                        <span class="material-symbols-outlined text-outline text-[16px] cursor-help" title="Genetic synthesis score based on family history & relative relations">info</span>
+                        <span class="material-symbols-outlined text-outline text-[16px] cursor-help" title="Genetic synthesis score based on family history &amp; relative relations">info</span>
                       </label>
                       <span class="text-label-sm text-outline">score (0.05 - 2.50)</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                      <input class="flex-1 h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors" id="inputPedigree" max="3.0" min="0.01" step="0.001" type="number" value="0.672" required/>
-                      <span class="hidden md:inline text-label-sm text-on-surface-variant bg-surface-container px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium">High Familial Risk Factor</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                      <input class="flex-1 h-11 px-3.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg font-code-num text-body-md text-on-surface outline-none shadow-xs focus:border-primary focus:bg-surface-container-low transition-colors min-w-0" id="inputPedigree" max="3.0" min="0.01" step="0.001" placeholder="e.g. 0.672" type="number" value="" required/>
+                      <span id="pedigreeBadge" class="hidden inline-flex items-center text-label-sm text-on-surface-variant bg-surface-container px-3.5 py-2.5 rounded-lg border border-outline-variant/30 font-medium shrink-0"></span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Form Action Row -->
-              <div class="flex flex-col sm:flex-row items-center gap-3 pt-3">
+              <div class="flex flex-col sm:flex-row items-center gap-3 pt-3 w-full">
                 <button class="w-full sm:flex-1 h-12 bg-primary text-on-primary hover:bg-surface-tint text-label-lg rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]" id="btnCalculate" type="submit">
                   <span class="material-symbols-outlined text-[20px]" id="calcIcon">calculate</span>
                   <span id="calcText">Estimate Diabetes Risk</span>
@@ -499,24 +585,192 @@ html_content = f'''<!DOCTYPE html>
                 </button>
               </div>
             </form>
+        </div>
+
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- FOUR-STAGE ANIMATED INFERENCE TRANSITION MODAL                            -->
+      <!-- ========================================================================= -->
+      <div id="inferenceTransitionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-all duration-300">
+        <div class="relative w-full max-w-lg bg-surface-container-lowest/95 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,83,219,0.25)] border border-primary-fixed/40 flex flex-col gap-6 overflow-hidden">
+          <!-- Ambient Blue/Cyan/Lavender Radial Glows -->
+          <div class="absolute -top-20 -left-20 w-44 h-44 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-[#dae2fd]/25 rounded-full blur-2xl pointer-events-none"></div>
+
+          <!-- Header -->
+          <div class="flex items-center gap-3.5 relative z-10">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-secondary-container text-on-primary flex items-center justify-center shadow-md animate-pulse">
+              <span class="material-symbols-outlined text-[26px]">vital_signs</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">Inference Engine</span>
+                <span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+              </div>
+              <h3 class="text-headline-sm text-on-surface font-bold text-[19px] mt-0.5">Evaluating Diabetes Risk</h3>
+            </div>
           </div>
 
-          <!-- RIGHT COLUMN: Risk Assessment Gauge & Confidence (5 Columns) -->
-          <div class="lg:col-span-5 flex flex-col gap-6">
+          <!-- Animated Progress Bar (Blue / Cyan / Lavender gradient) -->
+          <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden relative z-10">
+            <div id="inferenceProgressBar" class="h-full bg-gradient-to-r from-primary via-secondary-container to-[#b4c5ff] transition-all duration-300 rounded-full" style="width: 25%;"></div>
+          </div>
+
+          <!-- 4 Stages List -->
+          <div class="flex flex-col gap-3 relative z-10" id="inferenceStagesContainer">
+            <!-- Stage 1: Cyan / Tealing -->
+            <div id="stageItem1" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-high border-2 border-primary shadow-sm transition-all">
+              <div id="stageIcon1" class="w-7 h-7 rounded-lg bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs">
+                <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-label-md font-bold text-on-surface">1. Biometric Ingestion &amp; Preprocessing</span>
+                  <span id="stageStatus1" class="text-[11px] font-mono font-bold text-primary">Validating...</span>
+                </div>
+                <p class="text-[12px] text-on-surface-variant mt-0.5">Validating 8 physiological markers &amp; applying median imputation protocol</p>
+              </div>
+            </div>
+
+            <!-- Stage 2: Blue -->
+            <div id="stageItem2" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
+              <div id="stageIcon2" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
+                <span>2</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-label-md font-bold text-on-surface">2. Ensemble Model Execution</span>
+                  <span id="stageStatus2" class="text-[11px] font-mono font-bold text-outline">Queued</span>
+                </div>
+                <p class="text-[12px] text-on-surface-variant mt-0.5">Evaluating trained estimators against calibrated decision threshold</p>
+              </div>
+            </div>
+
+            <!-- Stage 3: Lavender -->
+            <div id="stageItem3" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
+              <div id="stageIcon3" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
+                <span>3</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-label-md font-bold text-on-surface">3. TreeSHAP Feature Attribution</span>
+                  <span id="stageStatus3" class="text-[11px] font-mono font-bold text-outline">Queued</span>
+                </div>
+                <p class="text-[12px] text-on-surface-variant mt-0.5">Computing exact additive Shapley contributions for patient biometrics</p>
+              </div>
+            </div>
+
+            <!-- Stage 4: Cyan/Emerald -->
+            <div id="stageItem4" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
+              <div id="stageIcon4" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
+                <span>4</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-label-md font-bold text-on-surface">4. Risk Calibration &amp; Synthesis</span>
+                  <span id="stageStatus4" class="text-[11px] font-mono font-bold text-outline">Queued</span>
+                </div>
+                <p class="text-[12px] text-on-surface-variant mt-0.5">Synthesizing clinical risk tier &amp; explainability report</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Note -->
+          <div class="flex items-center justify-between pt-2 text-[12px] text-outline relative z-10 border-t border-outline-variant/20">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-secondary">security</span>
+              Zero-Retention Client Ingestion
+            </span>
+            <span id="inferenceModelTag" class="font-mono text-primary font-semibold">Random Forest</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB / PAGE 2: DEDICATED PREDICTION RESULTS                                 -->
+      <!-- ========================================================================= -->
+      <div id="tab-content-prediction-results" class="hidden flex flex-col w-full">
+        
+        <!-- Top Action & Navigation Header -->
+        <div class="w-full bg-surface-container-lowest rounded-2xl p-4 mb-6 shadow-sm border border-outline-variant/30 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button class="px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-semibold flex items-center gap-1.5 transition-colors shadow-xs" onclick="switchTab('risk-prediction')">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span>Back to Assessment</span>
+            </button>
+            <div class="h-6 w-px bg-outline-variant/40 hidden sm:block"></div>
+            <div class="hidden sm:flex items-center gap-2">
+              <span class="text-label-sm text-outline">Assessment Record:</span>
+              <span class="font-mono text-label-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded" id="resultRecordBadge">Awaiting Assessment</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-2.5">
+            <button class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-semibold flex items-center gap-1.5 transition-colors" onclick="newAssessment()">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>New Assessment</span>
+            </button>
+            <button class="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-surface-tint text-label-md font-semibold flex items-center gap-1.5 shadow-xs transition-all" onclick="exportReport()">
+              <span class="material-symbols-outlined text-[18px]">print</span>
+              <span>Export Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- GRACEFUL EMPTY / MISSING RESULTS STATE (Shown when no active prediction exists) -->
+        <div id="resultsEmptyState" class="w-full bg-surface-container-lowest rounded-2xl p-10 lg:p-14 shadow-sm border border-outline-variant/30 flex flex-col items-center justify-center text-center gap-4 my-4">
+          <div class="w-16 h-16 rounded-2xl bg-secondary-container/40 text-secondary flex items-center justify-center shadow-xs">
+            <span class="material-symbols-outlined text-[36px]">biotech</span>
+          </div>
+          <div class="max-w-md flex flex-col gap-1.5">
+            <h3 class="text-headline-sm font-bold text-on-surface text-[22px]">No Assessment Results Available</h3>
+            <p class="text-body-sm text-on-surface-variant leading-relaxed" id="emptyStateMsg">
+              No active prediction calculation was found for the current patient profile. Enter physiological markers on the Assessment page and click "Estimate Diabetes Risk" to generate model inference and TreeSHAP attributions.
+            </p>
+          </div>
+          <button class="mt-2 px-6 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-surface-tint text-label-md font-bold shadow-sm transition-all flex items-center gap-2" onclick="switchTab('risk-prediction')">
+            <span class="material-symbols-outlined text-[20px]">assignment</span>
+            <span>Go to Risk Assessment</span>
+          </button>
+        </div>
+
+        <!-- ACTIVE RESULTS CONTAINER (Shown when currentResultRecord exists) -->
+        <div id="resultsContent" class="hidden flex flex-col w-full gap-6">
+          
+          <!-- Active Model & Timestamp Strip -->
+          <div class="w-full bg-surface-container-low rounded-xl p-3.5 px-4.5 border border-outline-variant/30 flex flex-wrap items-center justify-between gap-3 text-label-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-primary text-[20px]" id="resultBannerIcon">forest</span>
+              <span class="text-on-surface font-semibold">Evaluated Architecture:</span>
+              <span class="font-bold text-primary" id="resultModelName">Random Forest Classifier (Selected Best)</span>
+              <span class="text-secondary bg-surface px-2 py-0.5 rounded-md font-mono text-[12px] border border-outline-variant/30" id="resultThresholdBadge">Decision Threshold: 0.48</span>
+            </div>
+            <div class="flex items-center gap-2 text-outline">
+              <span class="material-symbols-outlined text-[16px]">schedule</span>
+              <span id="resultTimestamp">Generated: Just now</span>
+            </div>
+          </div>
+
+          <!-- 2-COLUMN GRID: Probability Gauge Card (Left 6 cols) & Patient Inputs Summary (Right 6 cols) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            <!-- Primary Risk Gauge Card -->
+            <!-- LEFT (6 cols): Primary Risk Gauge Card -->
+            <div class="lg:col-span-6 flex flex-col gap-6">
+              <!-- Primary Risk Gauge Card -->
             <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
               
               <!-- Header Note with Active Model Display & Switcher Button -->
               <div class="w-full flex items-center justify-between pb-3 border-b border-outline-variant/20">
                 <div class="flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[18px] text-primary" id="gaugeModelIcon">memory</span>
-                  <span class="text-label-md font-bold text-on-surface" id="gaugeModelLabel">XGBoost v2.4 Inference</span>
+                  <span class="material-symbols-outlined text-[18px] text-primary" id="gaugeModelIcon">forest</span>
+                  <span class="text-label-md font-bold text-on-surface" id="gaugeModelLabel">Random Forest Inference</span>
                 </div>
                 <!-- Quick Model Switcher button right on the card -->
                 <button class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-primary text-label-sm font-semibold transition-colors flex items-center gap-1" onclick="toggleModelFromCard()" title="Switch active ML model">
                   <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
-                  <span id="cardSwitchBtnText">Switch to Random Forest</span>
+                  <span id="cardSwitchBtnText">Switch to XGBoost</span>
                 </button>
               </div>
 
@@ -529,25 +783,25 @@ html_content = f'''<!DOCTYPE html>
                   <circle class="transition-all duration-700 ease-out" cx="100" cy="100" fill="transparent" id="riskGaugeCircle" r="82" stroke="#ba1a1a" stroke-dasharray="515.2" stroke-dashoffset="164.8" stroke-linecap="round" stroke-width="16"></circle>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-display-lg font-bold text-on-surface tracking-tight" id="riskGaugeValue">68%</span>
+                  <span class="text-display-lg font-bold text-on-surface tracking-tight" id="riskGaugeValue">--%</span>
                   <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Estimated Risk</span>
-                  <span class="text-label-sm text-outline mt-0.5">Threshold: 0.50</span>
+                  <span class="text-label-sm text-outline mt-0.5" id="riskGaugeThreshold">Threshold: 0.48</span>
                 </div>
               </div>
 
               <!-- Risk Categorization Pill -->
-              <div class="mt-1 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-error-container text-on-error-container text-label-lg font-bold" id="riskPill">
-                <span class="material-symbols-outlined text-[18px]" id="riskPillIcon">warning</span>
-                <span id="riskPillText">Higher Predicted Risk</span>
+              <div class="mt-1 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-label-lg font-bold" id="riskPill">
+                <span class="material-symbols-outlined text-[18px]" id="riskPillIcon">pending</span>
+                <span id="riskPillText">Awaiting Assessment</span>
               </div>
               <p class="text-body-sm text-on-surface-variant mt-2 max-w-xs" id="riskPhenotypeDesc">
-                Patient biometric markers align with positive diabetic phenotype under high oral glucose challenge.
+                Estimated risk probability evaluated against the active model decision threshold.
               </p>
 
               <!-- Spectrum Visualizer -->
               <div class="w-full mt-4 flex flex-col gap-1.5">
                 <div class="flex items-center justify-between text-label-sm text-on-surface-variant">
-                  <span id="specLabelLow">Low (&lt;30%)</span>
+                  <span id="specLabelLow">Lower (&lt;30%)</span>
                   <span id="specLabelMod">Moderate (30-60%)</span>
                   <span id="specLabelHigh" class="font-bold text-error">Elevated (&gt;60%)</span>
                 </div>
@@ -557,7 +811,7 @@ html_content = f'''<!DOCTYPE html>
                   <div class="w-[30%] h-full bg-secondary-fixed-dim"></div>
                   <div class="w-[40%] h-full rounded-r-full bg-error"></div>
                   <!-- Marker Pin -->
-                  <div class="absolute top-[-3px] w-2 h-4 bg-on-surface rounded-full shadow-md transition-all duration-500" id="spectrumMarker" style="left: 68%;"></div>
+                  <div class="absolute top-[-3px] w-2 h-4 bg-on-surface rounded-full shadow-md transition-all duration-500" id="spectrumMarker" style="left: 50%;"></div>
                 </div>
               </div>
 
@@ -570,23 +824,11 @@ html_content = f'''<!DOCTYPE html>
                     <span class="material-symbols-outlined text-[18px] text-secondary">psychology</span>
                     SHAP Local Risk Decomposition
                   </span>
-                  <span class="text-[11px] font-mono font-bold text-secondary bg-surface px-2 py-0.5 rounded-full" id="shapSummaryBadge">+0.33 Net SHAP</span>
+                  <span class="text-[11px] font-mono font-bold text-secondary bg-surface px-2 py-0.5 rounded-full" id="shapSummaryBadge">Net SHAP</span>
                 </div>
                 
                 <div class="flex flex-col gap-1.5 text-label-sm" id="instantShapPills">
                   <!-- Injected via JS -->
-                  <div class="flex items-center justify-between">
-                    <span class="text-on-surface font-medium">Glucose (154 mg/dL)</span>
-                    <span class="font-code-num font-bold text-error">+0.31 SHAP</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-on-surface font-medium">BMI (31.4 kg/m²)</span>
-                    <span class="font-code-num font-bold text-error">+0.14 SHAP</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-on-surface font-medium">Blood Pressure (78 mm)</span>
-                    <span class="font-code-num font-bold text-secondary">-0.07 SHAP</span>
-                  </div>
                 </div>
 
                 <!-- Jump Button -->
@@ -602,248 +844,225 @@ html_content = f'''<!DOCTYPE html>
                 </div>
               </div>
 
-              <!-- Model Calibration & Confidence Footer -->
+              <!-- Model Prediction & Decision Boundary Footer -->
               <div class="w-full mt-4 pt-3 bg-surface-container-low rounded-xl p-3.5 flex items-center justify-between text-left">
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                    <span class="material-symbols-outlined text-[18px]">analytics</span>
                   </div>
                   <div>
-                    <span class="text-label-sm text-on-surface-variant block">Model Confidence</span>
-                    <span class="text-label-md text-on-surface font-bold" id="confidenceValue">89.2% Predictive Certainty</span>
+                    <span class="text-label-sm text-on-surface-variant block">Predicted Risk Probability</span>
+                    <span class="text-label-md text-on-surface font-bold" id="confidenceValue">--% Predicted Probability</span>
                   </div>
                 </div>
-                <span class="text-label-sm text-secondary bg-surface px-2 py-1 rounded-md font-medium border border-outline-variant/30" id="brierScore">Brier: 0.11</span>
+                <span class="text-label-sm text-secondary bg-surface px-2 py-1 rounded-md font-medium border border-outline-variant/30" id="brierScore">Threshold: 0.48</span>
               </div>
             </div>
+            </div>
 
-          </div>
-        </div>
+            <!-- RIGHT (6 cols): Concise Patient-Input Summary Card -->
+            <div class="lg:col-span-6 bg-surface-container-lowest rounded-2xl p-6 lg:p-7 shadow-sm flex flex-col gap-4 border border-outline-variant/30" id="patientInputSummaryCard">
+              <div class="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                      <span class="material-symbols-outlined text-[16px]">fact_check</span>
+                    </span>
+                    <h3 class="text-label-lg font-bold text-on-surface">Patient Inputs Used for this Assessment</h3>
+                  </div>
+                  <p class="text-body-sm text-on-surface-variant mt-0.5">Biometric vector recorded and evaluated for this prediction:</p>
+                </div>
+                <span class="text-label-sm text-secondary bg-secondary-container/40 px-2.5 py-0.5 rounded-full font-bold">8 Biomarkers</span>
+              </div>
 
-        <!-- ========================================================================= -->
-        <!-- SECTION 3: SHAP EXPLAINABILITY: Why did the model make this prediction?   -->
-        <!-- ========================================================================= -->
-        <section class="w-full mb-10 pt-4" id="shap-analysis-section">
-          <div class="flex flex-col gap-1 mb-6">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[20px]">psychology</span>
+              <!-- 8 Biometric Summary Tiles -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="patientInputSummaryTiles">
+                <!-- Dynamically populated via JS -->
+              </div>
+
+              <!-- Inputs Bound & Invalidation Notice -->
+              <div class="p-3 rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant flex items-center gap-2.5 border border-outline-variant/20">
+                <span class="material-symbols-outlined text-[18px] text-primary shrink-0">info</span>
+                <span class="text-[12px] leading-snug">
+                  <strong>Inputs Snapshot:</strong> These parameters are bound to the active prediction record. Modifying inputs on the Assessment page or switching ML model will invalidate these results.
                 </span>
-                <h2 class="text-headline-sm text-on-surface font-bold">
-                  SHAP Explainability: Why did the model make this prediction?
-                </h2>
               </div>
-              <button class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary-container/40 text-on-secondary-container hover:bg-secondary-container text-label-md font-semibold transition-colors" onclick="switchTab('explainability-xai')">
-                <span class="material-symbols-outlined text-[18px]">open_in_new</span>
-                <span>Open Global SHAP Suite</span>
-              </button>
             </div>
-            <p class="text-body-md text-on-surface-variant">
-              TreeSHAP value decomposition decomposes the final probability from the population baseline into individual additive risk pushes.
-            </p>
           </div>
 
-          <!-- Side-by-Side Dual Risk Factor Panels -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- SECTION 1: Local SHAP Explanation -->
+          <!-- ========================================================================= -->
+        <!-- SECTION 1: INDIVIDUAL PREDICTION EXPLANATION (WHY DID MODEL PREDICT THIS?) -->
+        <!-- ========================================================================= -->
+        <section class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm mb-8 flex flex-col gap-6" id="shap-analysis-section">
+          
+          <!-- Header with Title, Action and Explanatory Formula -->
+          <div class="flex flex-col gap-3 pb-2 border-b border-outline-variant/30">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold">
+                  <span class="material-symbols-outlined text-[22px]">psychology</span>
+                </span>
+                <div>
+                  <h2 class="text-headline-sm text-on-surface font-bold text-[20px]">
+                    Why did the model make this prediction?
+                  </h2>
+                  <p class="text-body-sm text-on-surface-variant">
+                    Individual TreeSHAP feature attributions decomposing the deviation between baseline and predicted risk.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Context Pill with Active Model, Threshold & Class -->
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-label-sm font-semibold bg-surface-container text-on-surface border border-outline-variant/30" id="explainerModelBadge">Random Forest • Th: 0.48</span>
+                <button class="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container hover:bg-secondary-container text-label-sm font-semibold transition-colors" onclick="switchTab('explainability-xai')">
+                  <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+                  <span>Deep Dive</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Mathematical Space & Additive Formula -->
+            <div class="p-3 rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant flex flex-wrap items-center justify-between gap-2 border border-outline-variant/20">
+              <span id="waterfallFormulaText">
+                Features contribute additively in probability space from expected baseline <code class="bg-surface px-1.5 py-0.5 rounded text-primary font-mono font-semibold" id="waterfallBaseFormula">E[f(x)] = 0.498</code> to predicted risk probability <code class="bg-surface px-1.5 py-0.5 rounded text-error font-mono font-semibold" id="waterfallPredictedFormula">p = --</code>.
+              </span>
+              <span class="text-label-sm font-mono font-bold text-secondary bg-surface px-2.5 py-0.5 rounded-full" id="explainabilityNetBadge">+0.00 Net SHAP</span>
+            </div>
+          </div>
+
+          <!-- Main Layout Grid: Waterfall (Left 7 Cols) + Top Drivers (Right 5 Cols) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- Card A: Risk Increasing Factors (Red / Warm) -->
-            <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-7 shadow-sm flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/20">
-                  <div class="flex items-center gap-3">
-                    <span class="w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0">
-                      <span class="material-symbols-outlined text-[24px]">arrow_upward</span>
-                    </span>
-                    <div>
-                      <h3 class="text-headline-sm text-on-surface font-bold">Risk-Increasing Factors</h3>
-                      <span class="text-body-sm text-on-surface-variant">Pushed estimate higher towards diabetes</span>
-                    </div>
-                  </div>
-                  <span class="px-3.5 py-1.5 rounded-full bg-error-container font-code-num text-body-sm text-on-error-container font-bold" id="netPosBadge">+0.56 Net</span>
-                </div>
-
-                <!-- Feature Item List -->
-                <div class="flex flex-col gap-5 mt-5" id="increasingFactorsList">
-                  <!-- Dynamically populated via JS -->
-                </div>
+            <!-- LEFT (7 cols): Single Horizontal Waterfall Divergence Chart -->
+            <div class="lg:col-span-7 bg-surface-container-low rounded-xl p-4 sm:p-5 border border-outline-variant/30 flex flex-col gap-3">
+              <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+                <span class="text-label-md font-bold text-on-surface flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-primary text-[18px]">waterfall_chart</span>
+                  Patient Feature Attributions (SHAP)
+                </span>
+                <span class="text-[12px] text-outline font-medium">Exact signed contribution (φ)</span>
               </div>
 
-              <div class="mt-6 pt-4 flex items-center gap-2.5 text-on-surface-variant text-body-md font-medium border-t border-outline-variant/20" id="primaryDriverText">
-                <span class="material-symbols-outlined text-[20px] text-outline">info</span>
-                Primary driver: Plasma Glucose accounts for ~55% of total risk inflation.
-              </div>
-            </div>
-
-            <!-- Card B: Risk Decreasing Factors (Teal / Green) -->
-            <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-7 shadow-sm flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/20">
-                  <div class="flex items-center gap-3">
-                    <span class="w-10 h-10 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
-                      <span class="material-symbols-outlined text-[24px]">arrow_downward</span>
-                    </span>
-                    <div>
-                      <h3 class="text-headline-sm text-on-surface font-bold">Risk-Decreasing Factors</h3>
-                      <span class="text-body-sm text-on-surface-variant">Pulled estimate lower towards normal baseline</span>
-                    </div>
-                  </div>
-                  <span class="px-3.5 py-1.5 rounded-full bg-secondary-container font-code-num text-body-sm text-on-secondary-container font-bold" id="netNegBadge">-0.14 Net</span>
-                </div>
-
-                <!-- Feature Item List -->
-                <div class="flex flex-col gap-5 mt-5" id="decreasingFactorsList">
-                  <!-- Dynamically populated via JS -->
-                </div>
-              </div>
-
-              <div class="mt-6 pt-4 flex items-center gap-2.5 text-on-surface-variant text-body-md font-medium border-t border-outline-variant/20">
-                <span class="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
-                Vascular and endocrine biomarkers provide partial protective buffering.
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- ========================================================================= -->
-        <!-- SECTION 4: Detailed SHAP Analytics Card & Waterfall Plot                  -->
-        <!-- ========================================================================= -->
-        <section class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm mb-10 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 pb-2">
-            <h2 class="text-headline-sm text-on-surface font-bold">Feature Contribution Analysis (SHAP Waterfall)</h2>
-            <p class="text-body-sm text-on-surface-variant" id="waterfallFormulaText">
-              Each feature nudges the patient's score from the model base rate <code class="bg-surface-container px-1 py-0.5 rounded text-primary font-mono">E[f(x)] = 0.35</code> to predicted output <code class="bg-surface-container px-1 py-0.5 rounded text-error font-mono" id="waterfallPredictedFormula">f(x) = 0.68</code>.
-            </p>
-          </div>
-
-          <!-- Horizontal Centered Bi-directional SHAP Divergence Chart -->
-          <div class="w-full bg-surface-container-low rounded-xl p-5 overflow-x-auto border border-outline-variant/30">
-            <div class="min-w-[640px] flex flex-col gap-3">
-              <div class="grid grid-cols-12 text-center text-label-sm text-on-surface-variant pb-2 border-b border-outline-variant/40 font-semibold">
-                <div class="col-span-3 text-left">Patient Feature</div>
-                <div class="col-span-4 text-right text-secondary">← Protective (-SHAP)</div>
+              <!-- Divergence Axis Labels -->
+              <div class="grid grid-cols-12 text-center text-label-sm text-on-surface-variant pb-1 font-semibold">
+                <div class="col-span-4 text-left">Clinical Biomarker</div>
+                <div class="col-span-3 text-right text-secondary">← Protective (-φ)</div>
                 <div class="col-span-1 text-center font-mono font-bold text-outline">0.0</div>
-                <div class="col-span-4 text-left text-error">Elevating (+SHAP) →</div>
+                <div class="col-span-4 text-left text-error">Risk Push (+φ) →</div>
               </div>
 
               <!-- Divergence Rows Container -->
-              <div id="divergenceRows" class="flex flex-col gap-2">
-                <!-- Dynamically generated rows via JS -->
+              <div id="divergenceRows" class="flex flex-col gap-1.5">
+                <!-- Dynamically populated via JS -->
               </div>
             </div>
-          </div>
 
-          <!-- Step-by-Step Cumulative Waterfall Cascade Visualization -->
-          <div class="p-5 rounded-xl bg-surface-container-low/60 flex flex-col gap-3 border border-outline-variant/30">
-            <div class="flex items-center justify-between">
-              <span class="text-label-md text-on-surface font-semibold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-primary text-[18px]">stacked_bar_chart</span>
-                Cumulative Probability Stepper
-              </span>
-              <span class="text-label-sm text-outline">Base Rate → Patient Risk</span>
+            <!-- RIGHT (5 cols): Compact Key Drivers Summary -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+              
+              <!-- Top Increasing Factor(s) -->
+              <div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-error-container text-on-error-container flex items-center justify-center font-bold">
+                      <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                    </span>
+                    <span class="text-label-md font-bold text-on-surface">Top Risk-Increasing Drivers</span>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full bg-error-container font-code-num text-label-sm text-on-error-container font-bold" id="netPosBadge">+0.00 Net</span>
+                </div>
+                <div class="flex flex-col gap-2" id="increasingFactorsList">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <!-- Top Decreasing / Protective Factor(s) -->
+              <div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold">
+                      <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                    </span>
+                    <span class="text-label-md font-bold text-on-surface">Top Protective Drivers</span>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full bg-secondary-container font-code-num text-label-sm text-on-secondary-container font-bold" id="netNegBadge">-0.00 Net</span>
+                </div>
+                <div class="flex flex-col gap-2" id="decreasingFactorsList">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <!-- Primary Driver Clinical Interpretation -->
+              <div class="p-3.5 rounded-xl bg-surface-container border border-outline-variant/20 flex items-start gap-2.5 text-body-sm text-on-surface-variant font-medium" id="primaryDriverText">
+                <span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">info</span>
+                <span>Calculating feature attribution drivers...</span>
+              </div>
+
             </div>
-            
-            <div class="flex items-center gap-2 overflow-x-auto py-2" id="stepperContainer">
-              <!-- Dynamically populated cascade items via JS -->
-            </div>
+
           </div>
         </section>
 
-        <!-- SECTION 5: Global Model Explainability & Diagnostics -->
-        <section class="mb-10">
-          <div class="flex flex-col gap-1 mb-6">
+        <!-- ========================================================================= -->
+        <!-- SECTION 2: GLOBAL FEATURE IMPORTANCE                                      -->
+        <!-- ========================================================================= -->
+        <section class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm mb-8 flex flex-col gap-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <span class="material-symbols-outlined text-[20px]">leaderboard</span>
+                </span>
+                <h2 class="text-headline-sm text-on-surface font-bold text-[20px]" id="importanceSectionTitle">
+                  Global Feature Importance
+                </h2>
+              </div>
+              <p class="text-body-sm text-on-surface-variant" id="importanceSectionSubtitle">
+                Which features influence the model most across the evaluated dataset?
+              </p>
+            </div>
+
+            <!-- Model Switching Control -->
+            <div class="flex items-center gap-1.5 bg-surface-container p-1 rounded-xl self-start sm:self-auto border border-outline-variant/30">
+              <button class="px-3.5 py-1.5 rounded-lg text-label-sm font-semibold transition-all bg-primary text-on-primary shadow-xs" id="btnImpRf" onclick="switchImportanceView('rf')">
+                Random Forest (Gini)
+              </button>
+              <button class="px-3.5 py-1.5 rounded-lg text-label-sm font-medium transition-all bg-transparent text-on-surface-variant hover:text-on-surface" id="btnImpXgb" onclick="switchImportanceView('xgb')">
+                XGBoost (SHAP)
+              </button>
+            </div>
+          </div>
+
+          <!-- Single Ranked Horizontal Bar Chart -->
+          <div id="importanceBarsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5 pt-1">
+            <!-- Dynamically populated via JS -->
+          </div>
+
+          <!-- Compact Methodological & Architectural Metadata Strip -->
+          <div class="pt-3 border-t border-outline-variant/20 flex flex-wrap items-center justify-between gap-3 text-label-sm text-on-surface-variant">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary text-[22px]">analytics</span>
-              <h2 class="text-headline-sm text-on-surface font-bold">
-                How the Model Makes Predictions
-              </h2>
+              <span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+              <span class="font-bold text-on-surface" id="kpiModelName">Random Forest (Selected Best)</span>
+              <span class="text-primary font-semibold" id="kpiModelAuc">Holdout AUC: 0.8333</span>
+              <span class="text-outline" id="kpiModelF1">• Holdout F1: 68.22% (Th: 0.48)</span>
             </div>
-            <p class="text-body-md text-on-surface-variant">
-              Global insights validated across benchmarked cohorts illustrating feature dependencies for both XGBoost and Random Forest.
-            </p>
-          </div>
-
-          <!-- 3 Stat KPI Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <!-- Card 1 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-label-md text-on-surface-variant font-medium">Most Influential Feature</span>
-                <span class="w-8 h-8 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[18px]">bloodtype</span>
-                </span>
-              </div>
-              <div class="mt-4">
-                <span class="text-headline-lg font-bold text-on-surface block">Glucose</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-label-sm text-primary font-bold">Mean |SHAP|: 0.932</span>
-                  <span class="text-label-sm text-outline">• Accounts for 42% global gain</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-label-md text-on-surface-variant font-medium">Explainability Method</span>
-                <span class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[18px]">account_tree</span>
-                </span>
-              </div>
-              <div class="mt-4">
-                <span class="text-headline-lg font-bold text-on-surface block">TreeSHAP</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-label-sm text-secondary font-bold">Exact Additive Efficiency</span>
-                  <span class="text-label-sm text-outline">• Lundberg et al.</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-label-md text-on-surface-variant font-medium">Model Architecture</span>
-                <span class="w-8 h-8 rounded-lg bg-surface-container text-primary flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[18px]">model_training</span>
-                </span>
-              </div>
-              <div class="mt-4">
-                <span class="text-headline-lg font-bold text-on-surface block" id="kpiModelName">XGBoost Tuned</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-label-sm text-tertiary font-bold" id="kpiModelAuc">ROC-AUC: 0.841</span>
-                  <span class="text-label-sm text-outline" id="kpiModelF1">• F1-Score: 0.654</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Global Feature Importance Ranking (Ranked Preview) -->
-          <div class="bg-surface-container-lowest rounded-2xl p-6 lg:p-8 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h3 class="text-label-lg text-on-surface font-bold" id="importanceSectionTitle">Global Feature Importance (Cohort Mean |SHAP|)</h3>
-                <span class="text-body-sm text-on-surface-variant" id="importanceSectionSubtitle">Ranked importance across validation sets (TreeSHAP attribution).</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="px-3 py-1 rounded-full text-label-sm font-semibold transition-colors bg-primary text-on-primary" id="btnImpXgb" onclick="switchImportanceView('xgb')">XGBoost SHAP</button>
-                <button class="px-3 py-1 rounded-full text-label-sm font-medium transition-colors bg-surface-container text-on-surface-variant hover:text-on-surface" id="btnImpRf" onclick="switchImportanceView('rf')">Random Forest Gini</button>
-              </div>
-            </div>
-
-            <!-- Importance Bars Container -->
-            <div id="importanceBarsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 pt-2">
-              <!-- Dynamically populated via JS -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary text-[18px]">bloodtype</span>
+              <span>Dominant Predictor: <strong class="text-on-surface">Glucose</strong></span>
+              <span class="text-secondary font-semibold" id="kpiFeatureScore">Mean |SHAP|: 0.141</span>
+              <span class="text-outline" id="kpiFeatureShare">• 34.1% RF Gini • Rank 1</span>
             </div>
           </div>
         </section>
 
-        <!-- SECTION 6: Model Specifications & Technical Metadata Strip -->
+        <!-- SECTION 3: Model Specifications & Technical Metadata Strip -->
         <section class="bg-surface-container-low rounded-2xl p-4 lg:p-5 mb-8 shadow-xs border border-outline-variant/30">
           <div class="flex flex-wrap items-center justify-between gap-4 text-label-sm text-on-surface-variant">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-primary text-[18px]">verified</span>
-              <span class="font-semibold text-on-surface">Models:</span> XGBoost v2.0 (Best) &amp; Random Forest (n=100)
+              <span class="font-semibold text-on-surface">Models:</span> Random Forest (Selected Best • n=200) &amp; XGBoost (Tuned • n=150)
             </div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-secondary text-[18px]">hub</span>
@@ -851,7 +1070,7 @@ html_content = f'''<!DOCTYPE html>
             </div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-outline text-[18px]">dataset</span>
-              <span class="font-semibold text-on-surface">Dataset:</span> Pima Indians Diabetes / NHANES Standardized
+              <span class="font-semibold text-on-surface">Dataset:</span> Pima Indians Diabetes (N=769, 8 Features, Holdout N=154)
             </div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-tertiary text-[18px]">security</span>
@@ -859,6 +1078,19 @@ html_content = f'''<!DOCTYPE html>
             </div>
           </div>
         </section>
+
+          <!-- Clinical Disclaimer Card -->
+          <div class="w-full bg-surface-container-low rounded-2xl p-5 border border-outline-variant/30 flex items-start gap-3.5 mb-6">
+            <span class="material-symbols-outlined text-secondary text-[24px] shrink-0 mt-0.5">shield</span>
+            <div class="flex flex-col gap-1">
+              <h4 class="text-label-md font-bold text-on-surface">Clinical Decision Support Notice &amp; Disclaimer</h4>
+              <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                This system is an investigational research prototype designed for metabolic risk stratification and interpretability exploration. Model probability estimates and TreeSHAP feature attributions do not replace standardized diagnostic evaluations (fasting plasma glucose, HbA1c, oral glucose tolerance test) or professional medical judgment. All clinical management decisions must be confirmed by qualified medical professionals according to established clinical practice guidelines.
+              </p>
+            </div>
+          </div>
+
+        </div>
 
       </div>
 
@@ -1034,35 +1266,35 @@ html_content = f'''<!DOCTYPE html>
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant/30">
-              <tr class="hover:bg-surface-container-low transition-colors bg-primary-fixed/20 font-semibold" id="tableRowXgb">
+              <tr class="hover:bg-surface-container-low transition-colors bg-primary-fixed/20 font-semibold" id="tableRowRf">
                 <td class="py-3.5 px-4 flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
-                  XGBoost Classifier (Tuned)
+                  Random Forest (Selected Best • Th: 0.48)
                 </td>
-                <td class="py-3.5 px-4 font-code-num text-primary font-bold">77.27%</td>
-                <td class="py-3.5 px-4 font-code-num">70.21%</td>
-                <td class="py-3.5 px-4 font-code-num">61.11%</td>
-                <td class="py-3.5 px-4 font-code-num">65.35%</td>
-                <td class="py-3.5 px-4 font-code-num text-primary font-bold">0.8409</td>
+                <td class="py-3.5 px-4 font-code-num text-primary font-bold">73.38%</td>
+                <td class="py-3.5 px-4 font-code-num">58.67%</td>
+                <td class="py-3.5 px-4 font-code-num">81.48%</td>
+                <td class="py-3.5 px-4 font-code-num text-primary font-bold">68.22%</td>
+                <td class="py-3.5 px-4 font-code-num text-primary font-bold">0.8333</td>
                 <td class="py-3.5 px-4">
-                  <button class="px-3 py-1 rounded-full bg-primary text-on-primary text-label-sm font-semibold shadow-xs" onclick="changeModel('xgboost'); switchTab('risk-prediction');">
-                    Use XGBoost
+                  <button class="px-3 py-1 rounded-full bg-primary text-on-primary text-label-sm font-semibold shadow-xs" onclick="changeModel('random_forest'); switchTab('risk-prediction');">
+                    Use Random Forest
                   </button>
                 </td>
               </tr>
-              <tr class="hover:bg-surface-container-low transition-colors" id="tableRowRf">
+              <tr class="hover:bg-surface-container-low transition-colors" id="tableRowXgb">
                 <td class="py-3.5 px-4 flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
-                  Random Forest Classifier (n=100)
+                  XGBoost Classifier (Tuned • Th: 0.42)
                 </td>
-                <td class="py-3.5 px-4 font-code-num">75.32%</td>
-                <td class="py-3.5 px-4 font-code-num">64.29%</td>
-                <td class="py-3.5 px-4 font-code-num text-secondary font-bold">66.67%</td>
-                <td class="py-3.5 px-4 font-code-num">65.45%</td>
-                <td class="py-3.5 px-4 font-code-num">0.8257</td>
+                <td class="py-3.5 px-4 font-code-num">74.03%</td>
+                <td class="py-3.5 px-4 font-code-num">58.97%</td>
+                <td class="py-3.5 px-4 font-code-num text-secondary font-bold">85.19%</td>
+                <td class="py-3.5 px-4 font-code-num">69.70%</td>
+                <td class="py-3.5 px-4 font-code-num">0.8404</td>
                 <td class="py-3.5 px-4">
-                  <button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-semibold transition-colors" onclick="changeModel('random_forest'); switchTab('risk-prediction');">
-                    Use Random Forest
+                  <button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-semibold transition-colors" onclick="changeModel('xgboost'); switchTab('risk-prediction');">
+                    Use XGBoost
                   </button>
                 </td>
               </tr>
@@ -1070,7 +1302,7 @@ html_content = f'''<!DOCTYPE html>
           </table>
           <div class="mt-4 p-3 rounded-lg bg-surface-container-low text-body-sm text-on-surface-variant flex items-center gap-2">
             <span class="material-symbols-outlined text-secondary text-[18px]">lightbulb</span>
-            <span><strong>Clinical Trade-off:</strong> Random Forest offers higher Recall (66.67% vs 61.11%), detecting more potential diabetic patients, while XGBoost achieves higher overall Accuracy (77.27%) and higher ROC-AUC (0.841).</span>
+            <span><strong>Model Comparison:</strong> Random Forest was selected based on training-side 5-fold cross-validation composite scoring. Both architectures exhibit strong discriminatory performance on the holdout evaluation split (AUC 0.833 vs 0.840) under their tuned decision thresholds.</span>
           </div>
         </div>
 
@@ -1079,29 +1311,13 @@ html_content = f'''<!DOCTYPE html>
           <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <h3 class="text-label-lg font-bold text-on-surface mb-2">ROC-AUC Curves Comparison</h3>
-              <p class="text-body-sm text-on-surface-variant mb-3">XGBoost (AUC 0.841) vs Random Forest (AUC 0.826).</p>
+              <p class="text-body-sm text-on-surface-variant mb-3">XGBoost (AUC 0.840) vs Random Forest (AUC 0.833).</p>
               <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-low flex items-center justify-center p-2">
                 <img src="{img_roc}" alt="ROC Comparison" class="w-full h-auto object-contain max-h-[300px]"/>
               </div>
             </div>
             <p class="text-body-sm text-on-surface-variant mt-3 pt-2 border-t border-outline-variant/20">
-              Evaluates true positive rate vs false positive rate across all operational decision cutoffs.
-            </p>
-          </div>
-
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="text-label-lg font-bold text-on-surface">Confusion Matrix: XGBoost</h3>
-                <span class="text-label-sm text-primary font-bold bg-primary-fixed/40 px-2 py-0.5 rounded">Tuned Best</span>
-              </div>
-              <p class="text-body-sm text-on-surface-variant mb-3">Accuracy: 77.27% • Precision: 70.21%</p>
-              <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-low flex items-center justify-center p-2">
-                <img src="{img_cm_xgb}" alt="Confusion Matrix XGBoost" class="w-full h-auto object-contain max-h-[300px]"/>
-              </div>
-            </div>
-            <p class="text-body-sm text-on-surface-variant mt-3 pt-2 border-t border-outline-variant/20">
-              Higher specificity and lower false positive count (14 FP).
+              Evaluates true positive rate vs false positive rate across operational decision cutoffs.
             </p>
           </div>
 
@@ -1109,15 +1325,31 @@ html_content = f'''<!DOCTYPE html>
             <div>
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-label-lg font-bold text-on-surface">Confusion Matrix: Random Forest</h3>
-                <span class="text-label-sm text-secondary font-bold bg-secondary-container/40 px-2 py-0.5 rounded">Ensemble</span>
+                <span class="text-label-sm text-primary font-bold bg-primary-fixed/40 px-2 py-0.5 rounded">Selected Best</span>
               </div>
-              <p class="text-body-sm text-on-surface-variant mb-3">Accuracy: 75.32% • Recall: 66.67%</p>
+              <p class="text-body-sm text-on-surface-variant mb-3">Accuracy: 73.38% • Recall: 81.48% (Th: 0.48)</p>
               <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-low flex items-center justify-center p-2">
                 <img src="{img_cm_rf}" alt="Confusion Matrix Random Forest" class="w-full h-auto object-contain max-h-[300px]"/>
               </div>
             </div>
             <p class="text-body-sm text-on-surface-variant mt-3 pt-2 border-t border-outline-variant/20">
-              Higher sensitivity and lower false negative count (18 FN).
+              Random Forest confusion matrix evaluated at optimal decision threshold 0.48.
+            </p>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-label-lg font-bold text-on-surface">Confusion Matrix: XGBoost</h3>
+                <span class="text-label-sm text-secondary font-bold bg-secondary-container/40 px-2 py-0.5 rounded">Tuned</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant mb-3">Accuracy: 74.03% • Recall: 85.19% (Th: 0.42)</p>
+              <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-low flex items-center justify-center p-2">
+                <img src="{img_cm_xgb}" alt="Confusion Matrix XGBoost" class="w-full h-auto object-contain max-h-[300px]"/>
+              </div>
+            </div>
+            <p class="text-body-sm text-on-surface-variant mt-3 pt-2 border-t border-outline-variant/20">
+              XGBoost confusion matrix evaluated at optimal decision threshold 0.42.
             </p>
           </div>
         </div>
@@ -1177,8 +1409,8 @@ html_content = f'''<!DOCTYPE html>
         <div>
           <label class="font-medium text-on-surface block mb-1">Active Machine Learning Model</label>
           <select id="modalModelSelector" onchange="changeModel(this.value)" class="w-full h-10 px-3 bg-surface-container-low rounded-lg border border-outline-variant/40 font-semibold text-on-surface outline-none">
-            <option value="xgboost">XGBoost (Tuned Best • AUC 0.841)</option>
-            <option value="random_forest">Random Forest Classifier (AUC 0.826)</option>
+            <option value="random_forest" selected>Random Forest Classifier (Selected Best • Th: 0.48)</option>
+            <option value="xgboost">XGBoost Classifier (Tuned • Th: 0.42)</option>
           </select>
         </div>
         <label class="flex items-center justify-between cursor-pointer">
@@ -1187,7 +1419,7 @@ html_content = f'''<!DOCTYPE html>
         </label>
         <label class="flex items-center justify-between cursor-pointer">
           <span class="font-medium text-on-surface">Classification Threshold</span>
-          <span class="text-label-sm font-mono bg-surface-container px-2 py-0.5 rounded">0.50</span>
+          <span class="text-label-sm font-mono bg-surface-container px-2 py-0.5 rounded" id="modalThresholdVal">0.48</span>
         </label>
       </div>
       <div class="flex justify-end pt-3">
@@ -1196,50 +1428,35 @@ html_content = f'''<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="w-full bg-surface-container-lowest shadow-[0_-1px_6px_rgba(0,0,0,0.02)] no-print mt-auto">
-    <div class="max-w-7xl mx-auto px-6 py-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md text-label-md text-on-surface-variant">
-      <div class="flex flex-wrap items-center gap-space-md">
-        <span class="flex items-center gap-1.5 text-on-surface font-medium">
-          <span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
-          Clinical Decision Support
-        </span>
-        <span class="hidden sm:inline text-outline-variant">•</span>
-        <span>XGBoost &amp; Random Forest Supported</span>
-        <span class="hidden sm:inline text-outline-variant">•</span>
-        <span>TreeSHAP Integrated</span>
-      </div>
-      <div class="flex items-center gap-space-sm px-space-md py-1 rounded-full bg-surface-container text-label-sm">
-        <span class="w-2 h-2 rounded-full bg-tertiary"></span>
-        <span class="text-on-surface font-medium">System Ready: SHAP Explainer Active</span>
-      </div>
-    </div>
-  </footer>
+
 
   <!-- DYNAMIC CLIENT LOGIC -->
   <script>
-    let activeModel = 'xgboost'; // 'xgboost' or 'random_forest'
+    let activeModel = 'random_forest'; // 'random_forest' (selected best) or 'xgboost'
+    let currentResultRecord = null;
+    let activeRequestId = 0;
+    let isCalculating = false;
 
     const DEP_PLOTS = {{
       glucose: {{
         img: '{img_dep_gluc}',
-        desc: '<strong>Glucose Effect:</strong> Clear inflection point observed at ~125 mg/dL. Values below 100 mg/dL yield negative SHAP (protective), whereas values exceeding 140 mg/dL exhibit steep risk elevation.'
+        desc: '<strong>Glucose Effect:</strong> In tree ensemble SHAP analysis, values below ~100 mg/dL yield negative SHAP contributions, whereas values exceeding ~140 mg/dL contribute strongly toward higher estimated risk.'
       }},
       bmi: {{
         img: '{img_dep_bmi}',
-        desc: '<strong>BMI Effect:</strong> Risk turns increasingly positive above BMI 26.0 kg/m² (overweight cutoff) and levels off into high diabetic contribution past BMI 35.0 kg/m².'
+        desc: '<strong>BMI Effect:</strong> SHAP values turn positive above ~26.0 kg/m² and contribute higher positive risk adjustments as BMI increases.'
       }},
       age: {{
         img: '{img_dep_age}',
-        desc: '<strong>Age Effect:</strong> Accelerating contribution after age 35, reflecting gradual beta-cell secretory depletion with plateau above age 50.'
+        desc: '<strong>Age Effect:</strong> Contribution increases steadily above age 35, leveling off in older age brackets.'
       }},
       pedigree: {{
         img: '{img_dep_ped}',
-        desc: '<strong>Diabetes Pedigree Function Effect:</strong> Strong monotonic correlation with positive SHAP contribution as hereditary familial risk score exceeds 0.50.'
+        desc: '<strong>Diabetes Pedigree Function Effect:</strong> Higher familial risk scores correlate with higher positive SHAP contributions to model output.'
       }},
       preg: {{
         img: '{img_dep_preg}',
-        desc: '<strong>Pregnancies Parity Effect:</strong> Moderate positive risk push when parity exceeds 4 pregnancies relative to nulliparous cohorts.'
+        desc: "<strong>Pregnancies Parity Effect:</strong> Higher pregnancy counts (above 4) contribute positively to the model's risk output."
       }}
     }};
 
@@ -1263,7 +1480,28 @@ html_content = f'''<!DOCTYPE html>
       }}
     }}
 
+    function showToast(msg) {{
+      let toast = document.getElementById('globalToastNotification');
+      if (!toast) {{
+        toast = document.createElement('div');
+        toast.id = 'globalToastNotification';
+        toast.className = 'fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-on-surface text-surface text-label-sm font-semibold shadow-lg transition-all duration-300 opacity-0 pointer-events-none transform translate-y-2';
+        document.body.appendChild(toast);
+      }}
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {{
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+      }}, 2600);
+    }}
+
     function changeModel(modelName) {{
+      if (activeModel !== modelName) {{
+        invalidateStaleResults('model_changed');
+      }}
       activeModel = modelName;
       
       // Update header selectors
@@ -1285,34 +1523,56 @@ html_content = f'''<!DOCTYPE html>
       const heroEngineTag = document.getElementById('heroEngineTag');
       const legendText = document.getElementById('legendText');
 
+      const mTh = document.getElementById('modalThresholdVal');
+      const gTh = document.getElementById('riskGaugeThreshold');
+      const bScore = document.getElementById('brierScore');
+
       if (modelName === 'xgboost') {{
         toggleXgb.className = 'px-4 py-1.5 rounded-lg text-label-md font-bold transition-all bg-primary text-on-primary shadow-xs';
         toggleRf.className = 'px-4 py-1.5 rounded-lg text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all';
-        bannerTitle.innerText = 'XGBoost Classifier (Tuned • ROC-AUC 0.841)';
-        gaugeModelLabel.innerText = 'XGBoost v2.4 Inference';
+        bannerTitle.innerText = 'XGBoost Classifier (Tuned • Threshold: 0.42)';
+        gaugeModelLabel.innerText = 'XGBoost Inference';
         gaugeModelIcon.innerText = 'memory';
         cardSwitchBtnText.innerText = 'Switch to Random Forest';
-        kpiModelName.innerText = 'XGBoost Tuned';
-        kpiModelAuc.innerText = 'ROC-AUC: 0.841';
-        kpiModelF1.innerText = '• F1-Score: 0.654';
-        heroModelBadge.innerText = 'XGBoost calibrated';
+        kpiModelName.innerText = 'XGBoost (Tuned)';
+        kpiModelAuc.innerText = 'Holdout AUC: 0.8404';
+        kpiModelF1.innerText = '• Holdout F1: 69.70% (Th: 0.42)';
+        const featScore = document.getElementById('kpiFeatureScore');
+        const featShare = document.getElementById('kpiFeatureShare');
+        if (featScore) featScore.innerText = 'Mean |SHAP|: 0.932';
+        if (featShare) featShare.innerText = '• 31.7% XGB Gain • Rank 1';
+        heroModelBadge.innerText = 'XGBoost Active';
         if (heroEngineTag) heroEngineTag.innerText = 'Explainable Machine Learning • TreeSHAP Engine';
         legendText.innerText = 'XGBoost Predictor';
-        showToast('Switched to XGBoost Model (ROC-AUC: 0.841, Accuracy: 77.27%)');
+        const explainerModelBadge = document.getElementById('explainerModelBadge');
+        if (explainerModelBadge) explainerModelBadge.innerText = 'XGBoost (Tuned) • Th: 0.42';
+        if (mTh) mTh.innerText = '0.42';
+        if (gTh) gTh.innerText = 'Threshold: 0.42';
+        if (bScore) bScore.innerText = 'Threshold: 0.42';
+        showToast('Switched to XGBoost Model (Decision Threshold: 0.42)');
       }} else {{
         toggleRf.className = 'px-4 py-1.5 rounded-lg text-label-md font-bold transition-all bg-primary text-on-primary shadow-xs';
         toggleXgb.className = 'px-4 py-1.5 rounded-lg text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all';
-        bannerTitle.innerText = 'Random Forest Classifier (100 Trees • ROC-AUC 0.826)';
+        bannerTitle.innerText = 'Random Forest Classifier (Selected Best • Threshold: 0.48)';
         gaugeModelLabel.innerText = 'Random Forest Inference';
         gaugeModelIcon.innerText = 'forest';
         cardSwitchBtnText.innerText = 'Switch to XGBoost';
-        kpiModelName.innerText = 'Random Forest';
-        kpiModelAuc.innerText = 'ROC-AUC: 0.826';
-        kpiModelF1.innerText = '• Recall: 66.67%';
-        heroModelBadge.innerText = 'Random Forest calibrated';
+        kpiModelName.innerText = 'Random Forest (Selected Best)';
+        kpiModelAuc.innerText = 'Holdout AUC: 0.8333';
+        kpiModelF1.innerText = '• Holdout F1: 68.22% (Th: 0.48)';
+        const featScore = document.getElementById('kpiFeatureScore');
+        const featShare = document.getElementById('kpiFeatureShare');
+        if (featScore) featScore.innerText = 'Mean |SHAP|: 0.141';
+        if (featShare) featShare.innerText = '• 34.1% RF Gini • Rank 1';
+        heroModelBadge.innerText = 'Random Forest Active';
         if (heroEngineTag) heroEngineTag.innerText = 'Random Forest Ensemble • TreeSHAP (Class 1)';
         legendText.innerText = 'Random Forest Predictor';
-        showToast('Switched to Random Forest Model (ROC-AUC: 0.826, Recall: 66.67%)');
+        const explainerModelBadge = document.getElementById('explainerModelBadge');
+        if (explainerModelBadge) explainerModelBadge.innerText = 'Random Forest (Selected Best) • Th: 0.48';
+        if (mTh) mTh.innerText = '0.48';
+        if (gTh) gTh.innerText = 'Threshold: 0.48';
+        if (bScore) bScore.innerText = 'Threshold: 0.48';
+        showToast('Switched to Random Forest Model (Decision Threshold: 0.48)');
       }}
 
       // Recompute prediction with new model characteristics
@@ -1367,16 +1627,16 @@ html_content = f'''<!DOCTYPE html>
         btnRf.className = 'px-3 py-1 rounded-full text-label-sm font-semibold transition-colors bg-primary text-on-primary';
         btnXgb.className = 'px-3 py-1 rounded-full text-label-sm font-medium transition-colors bg-surface-container text-on-surface-variant hover:text-on-surface';
         title.innerText = 'Global Feature Importance (Random Forest Gini Impurity)';
-        subtitle.innerText = 'Normalized mean decrease in Gini impurity across 100 decision trees.';
+        subtitle.innerText = 'Normalized mean decrease in Gini impurity across 200 decision trees.';
         renderImportanceBars([
-          {{ name: '1. Glucose Concentration', score: '0.311', pct: 100 }},
-          {{ name: '2. Body Mass Index (BMI)', score: '0.179', pct: 57.5 }},
-          {{ name: '3. Age', score: '0.115', pct: 36.9 }},
-          {{ name: '4. Diabetes Pedigree', score: '0.104', pct: 33.4 }},
-          {{ name: '5. Insulin Serum', score: '0.079', pct: 25.4 }},
-          {{ name: '6. Pregnancies Count', score: '0.078', pct: 25.1 }},
-          {{ name: '7. Blood Pressure', score: '0.069', pct: 22.2 }},
-          {{ name: '8. Skinfold Thickness', score: '0.065', pct: 20.9 }}
+          {{ name: '1. Glucose Concentration', score: '0.341', pct: 100 }},
+          {{ name: '2. Body Mass Index (BMI)', score: '0.185', pct: 54.2 }},
+          {{ name: '3. Age', score: '0.130', pct: 38.0 }},
+          {{ name: '4. Insulin Serum', score: '0.094', pct: 27.5 }},
+          {{ name: '5. Diabetes Pedigree', score: '0.080', pct: 23.3 }},
+          {{ name: '6. Pregnancies Count', score: '0.066', pct: 19.4 }},
+          {{ name: '7. Skinfold Thickness', score: '0.056', pct: 16.4 }},
+          {{ name: '8. Blood Pressure', score: '0.050', pct: 14.6 }}
         ]);
       }}
     }}
@@ -1400,25 +1660,35 @@ html_content = f'''<!DOCTYPE html>
       }});
     }}
 
-    // Tab switching
-    function switchTab(tabId) {{
-      const tabs = ['risk-prediction', 'explainability-xai', 'model-benchmark-and-insights'];
+    // Tab switching with URL Hash Routing & Browser History
+    function switchTab(tabId, pushHistory = true) {{
+      let targetTab = tabId;
+      if (tabId === 'assessment' || tabId === 'risk-assessment') targetTab = 'risk-prediction';
+      if (tabId === 'results' || tabId === 'prediction-results') targetTab = 'prediction-results';
+
+      const tabs = ['risk-prediction', 'prediction-results', 'explainability-xai', 'model-benchmark-and-insights'];
       tabs.forEach(t => {{
         const content = document.getElementById('tab-content-' + t);
         const btn = document.getElementById('nav-' + t);
-        if (content && btn) {{
-          const isXai = (t === 'explainability-xai');
-          const prefix = isXai ? 'flex items-center gap-1.5 ' : '';
-          
-          if (t === tabId) {{
+        if (content) {{
+          if (t === targetTab) {{
             content.classList.remove('hidden');
+          }} else {{
+            content.classList.add('hidden');
+          }}
+        }}
+        if (btn) {{
+          const isXai = (t === 'explainability-xai');
+          const isResults = (t === 'prediction-results');
+          const prefix = (isXai || isResults) ? 'flex items-center gap-1.5 ' : '';
+          
+          if (t === targetTab) {{
             btn.className = prefix + 'px-space-md py-1.5 rounded-lg transition-all bg-primary text-on-primary shadow-sm font-semibold text-label-md';
             if (isXai) {{
               const b = document.getElementById('shapNavBadge');
               if (b) b.className = 'px-1.5 py-0.5 rounded bg-white/20 text-white text-[11px] font-bold';
             }}
           }} else {{
-            content.classList.add('hidden');
             btn.className = prefix + 'px-space-md py-1.5 rounded-lg text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all';
             if (isXai) {{
               const b = document.getElementById('shapNavBadge');
@@ -1427,13 +1697,52 @@ html_content = f'''<!DOCTYPE html>
           }}
         }}
       }});
+
+      // Show/hide empty state if navigating to results
+      if (targetTab === 'prediction-results') {{
+        if (!currentResultRecord) {{
+          document.getElementById('resultsEmptyState')?.classList.remove('hidden');
+          document.getElementById('resultsContent')?.classList.add('hidden');
+        }} else {{
+          document.getElementById('resultsEmptyState')?.classList.add('hidden');
+          document.getElementById('resultsContent')?.classList.remove('hidden');
+        }}
+      }}
+
+      // Update URL hash for browser history
+      if (pushHistory) {{
+        const routeHash = targetTab === 'risk-prediction' ? 'assessment' : 
+                          targetTab === 'prediction-results' ? 'results' : targetTab;
+        if (window.location.hash !== '#' + routeHash) {{
+          try {{
+            history.pushState(null, '', '#' + routeHash);
+          }} catch (e) {{
+            window.location.hash = routeHash;
+          }}
+        }}
+      }}
+
       if (window.lenisInstance) {{
-        window.lenisInstance.scrollTo(0, {{ immediate: false, duration: 0.7 }});
+        window.lenisInstance.scrollTo(0, {{ immediate: false, duration: 0.5 }});
       }} else {{
         window.scrollTo({{ top: 0, behavior: 'smooth' }});
       }}
       syncFrameHeight();
     }}
+
+    // Browser back/forward navigation handler
+    window.addEventListener('popstate', () => {{
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'results' || hash === 'prediction-results') {{
+        switchTab('prediction-results', false);
+      }} else if (hash === 'explainability-xai') {{
+        switchTab('explainability-xai', false);
+      }} else if (hash === 'model-benchmark-and-insights' || hash === 'benchmark') {{
+        switchTab('model-benchmark-and-insights', false);
+      }} else {{
+        switchTab('risk-prediction', false);
+      }}
+    }});
 
     function syncFrameHeight() {{
       setTimeout(() => {{
@@ -1464,86 +1773,187 @@ html_content = f'''<!DOCTYPE html>
       }}, 60);
     }}
 
-    function toggleCohortDropdown() {{
-      const d = document.getElementById('cohortDropdown');
-      d.classList.toggle('hidden');
-    }}
-    function closeCohortDropdown() {{
-      document.getElementById('cohortDropdown').classList.add('hidden');
+    let activeTestCase = null;
+
+    const TEST_CASES = {{
+      'test-01': {{
+        id: 'test-01',
+        title: 'Test 01: Elevated Glycemia',
+        badgeText: 'Test 01: Elevated Glycemia',
+        tier: 'elevated',
+        values: {{
+          age: 48,
+          preg: 2,
+          gluc: 154,
+          bp: 78,
+          bmi: 31.4,
+          ins: 130,
+          skin: 32,
+          ped: 0.672
+        }},
+        toastMsg: 'Loaded Test 01: Elevated Glycemia (Glucose 154 mg/dL)'
+      }},
+      'test-02': {{
+        id: 'test-02',
+        title: 'Test 02: Normoglycemic Baseline',
+        badgeText: 'Test 02: Normoglycemic',
+        tier: 'low',
+        values: {{
+          age: 28,
+          preg: 0,
+          gluc: 88,
+          bp: 68,
+          bmi: 21.8,
+          ins: 65,
+          skin: 19,
+          ped: 0.214
+        }},
+        toastMsg: 'Loaded Test 02: Normoglycemic Baseline (Glucose 88 mg/dL)'
+      }},
+      'test-03': {{
+        id: 'test-03',
+        title: 'Test 03: Impaired Fasting Glucose',
+        badgeText: 'Test 03: Impaired Glucose',
+        tier: 'moderate',
+        values: {{
+          age: 41,
+          preg: 1,
+          gluc: 126,
+          bp: 74,
+          bmi: 28.2,
+          ins: 95,
+          skin: 24,
+          ped: 0.450
+        }},
+        toastMsg: 'Loaded Test 03: Impaired Fasting Glucose (Glucose 126 mg/dL)'
+      }}
+    }};
+
+    function updateGlucoseBadge(val) {{
+      const badge = document.getElementById('glucoseBadge');
+      if (!badge) return;
+      if (val === '' || val === null || val === undefined) {{
+        badge.className = 'hidden';
+        badge.innerText = '';
+        return;
+      }}
+      const num = parseFloat(val);
+      if (isNaN(num)) {{
+        badge.className = 'hidden';
+        badge.innerText = '';
+      }} else if (num >= 126) {{
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-label-sm font-semibold';
+        badge.innerText = 'Elevated (≥126)';
+      }} else if (num >= 100) {{
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-label-sm font-semibold';
+        badge.innerText = 'Impaired (100-125)';
+      }} else {{
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary-container/50 text-on-tertiary-fixed-variant text-label-sm font-semibold';
+        badge.innerText = 'Normal (<100)';
+      }}
     }}
 
-    function openSettingsModal() {{ 
-      document.getElementById('settingsModal').classList.remove('hidden'); 
-      if (window.lenisInstance) window.lenisInstance.stop();
-    }}
-    function closeSettingsModal() {{ 
-      document.getElementById('settingsModal').classList.add('hidden'); 
-      if (window.lenisInstance) window.lenisInstance.start();
+    function updatePedigreeBadge(val) {{
+      const badge = document.getElementById('pedigreeBadge');
+      if (!badge) return;
+      if (val === '' || val === null || val === undefined) {{
+        badge.className = 'hidden';
+        badge.innerText = '';
+        return;
+      }}
+      const num = parseFloat(val);
+      if (isNaN(num)) {{
+        badge.className = 'hidden';
+        badge.innerText = '';
+      }} else if (num >= 0.5) {{
+        badge.className = 'inline-flex items-center text-label-sm text-error bg-error-container/40 px-3.5 py-2.5 rounded-lg border border-error/20 font-medium shrink-0';
+        badge.innerText = 'High Familial Risk Factor';
+      }} else if (num >= 0.25) {{
+        badge.className = 'inline-flex items-center text-label-sm text-amber-800 bg-amber-100/60 px-3.5 py-2.5 rounded-lg border border-amber-300/40 font-medium shrink-0';
+        badge.innerText = 'Moderate Familial Factor';
+      }} else {{
+        badge.className = 'inline-flex items-center text-label-sm text-tertiary bg-tertiary-container/40 px-3.5 py-2.5 rounded-lg border border-tertiary/20 font-medium shrink-0';
+        badge.innerText = 'Low Familial Factor';
+      }}
     }}
 
-    function closeReportModal() {{ 
-      document.getElementById('reportModal').classList.add('hidden'); 
-      if (window.lenisInstance) window.lenisInstance.start();
+    function selectTestCase(caseId) {{
+      const tc = TEST_CASES[caseId];
+      if (!tc) return;
+
+      activeTestCase = caseId;
+
+      document.getElementById('inputAge').value = tc.values.age;
+      document.getElementById('inputPregnancies').value = tc.values.preg;
+      document.getElementById('inputGlucose').value = tc.values.gluc;
+      document.getElementById('inputBP').value = tc.values.bp;
+      document.getElementById('inputBMI').value = tc.values.bmi;
+      document.getElementById('inputInsulin').value = tc.values.ins;
+      document.getElementById('inputSkin').value = tc.values.skin;
+      document.getElementById('inputPedigree').value = tc.values.ped;
+
+      const cohortLabel = document.getElementById('currentCohortLabel');
+      if (cohortLabel) cohortLabel.innerText = tc.badgeText;
+
+      updateTestCaseCardsUI(caseId);
+      updateGlucoseBadge(tc.values.gluc);
+      updatePedigreeBadge(tc.values.ped);
+      invalidateStaleResults('test_case_selected');
+      showToast(tc.toastMsg);
     }}
 
-    function showToast(message) {{
-      const toast = document.getElementById('statusToast');
-      const toastText = document.getElementById('statusToastText');
-      toastText.innerText = message;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {{
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }}, 2800);
+    function updateTestCaseCardsUI(selectedId) {{
+      ['01', '02', '03'].forEach(num => {{
+        const cardId = 'test-' + num;
+        const card = document.getElementById('testCard-' + num);
+        if (!card) return;
+
+        const isSelected = (selectedId !== null && cardId === selectedId);
+        card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+
+        const statusText = card.querySelector('.test-card-status-text');
+        const statusIcon = card.querySelector('.test-card-status-icon');
+        const testBadge = card.querySelector('.test-badge-num');
+
+        if (isSelected) {{
+          card.className = 'test-case-card group relative p-4 rounded-xl border-2 border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20 transition-all cursor-pointer flex flex-col justify-between gap-3';
+          if (statusText) {{
+            statusText.innerText = 'Active';
+            statusText.parentElement.className = 'text-primary font-bold flex items-center gap-1 text-[12px]';
+          }}
+          if (statusIcon) statusIcon.innerText = 'check_circle';
+          if (testBadge) testBadge.className = 'test-badge-num px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tracking-wider bg-surface-container-high text-primary border border-primary/20';
+        }} else {{
+          card.className = 'test-case-card group relative p-4 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3';
+          if (statusText) {{
+            statusText.innerText = 'Select';
+            statusText.parentElement.className = 'text-outline font-medium flex items-center gap-1 text-[12px] group-hover:text-primary';
+          }}
+          if (statusIcon) statusIcon.innerText = 'radio_button_unchecked';
+          if (testBadge) testBadge.className = 'test-badge-num px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tracking-wider bg-surface-container text-outline border border-outline-variant/40';
+        }}
+      }});
+    }}
+
+    function handleFormInputChange(fieldId) {{
+      if (activeTestCase !== null) {{
+        activeTestCase = null;
+        updateTestCaseCardsUI(null);
+        const cohortLabel = document.getElementById('currentCohortLabel');
+        if (cohortLabel) cohortLabel.innerText = 'Custom Biometrics';
+      }}
+      if (fieldId === 'inputGlucose') {{
+        updateGlucoseBadge(document.getElementById('inputGlucose').value);
+      }}
+      if (fieldId === 'inputPedigree') {{
+        updatePedigreeBadge(document.getElementById('inputPedigree').value);
+      }}
     }}
 
     function loadCohort(type) {{
-      const age = document.getElementById('inputAge');
-      const preg = document.getElementById('inputPregnancies');
-      const gluc = document.getElementById('inputGlucose');
-      const bp = document.getElementById('inputBP');
-      const bmi = document.getElementById('inputBMI');
-      const ins = document.getElementById('inputInsulin');
-      const skin = document.getElementById('inputSkin');
-      const ped = document.getElementById('inputPedigree');
-      const cohortLabel = document.getElementById('currentCohortLabel');
-
-      if (type === 'high') {{
-        age.value = 48;
-        preg.value = 2;
-        gluc.value = 154;
-        bp.value = 78;
-        bmi.value = 31.4;
-        ins.value = 130;
-        skin.value = 32;
-        ped.value = 0.672;
-        cohortLabel.innerText = "Cohort 04 (High)";
-        calculateRisk(false, 68);
-        showToast('Loaded Case A: Elevated Glycemia (68% Predicted Risk)');
-      }} else if (type === 'low') {{
-        age.value = 28;
-        preg.value = 0;
-        gluc.value = 88;
-        bp.value = 68;
-        bmi.value = 21.8;
-        ins.value = 65;
-        skin.value = 19;
-        ped.value = 0.214;
-        cohortLabel.innerText = "Cohort 02 (Low)";
-        calculateRisk(false, 14);
-        showToast('Loaded Case B: Normoglycemic (14% Predicted Risk)');
-      }} else if (type === 'moderate') {{
-        age.value = 41;
-        preg.value = 1;
-        gluc.value = 126;
-        bp.value = 74;
-        bmi.value = 28.2;
-        ins.value = 95;
-        skin.value = 24;
-        ped.value = 0.450;
-        cohortLabel.innerText = "Cohort 07 (Moderate)";
-        calculateRisk(false, 46);
-        showToast('Loaded Case C: Impaired Glucose (46% Predicted Risk)');
-      }}
+      if (type === 'high') selectTestCase('test-01');
+      else if (type === 'low') selectTestCase('test-02');
+      else if (type === 'moderate') selectTestCase('test-03');
     }}
 
     function resetForm() {{
@@ -1556,11 +1966,151 @@ html_content = f'''<!DOCTYPE html>
       document.getElementById('inputSkin').value = '';
       document.getElementById('inputPedigree').value = '';
       
-      updateRiskOutput(0, 'Awaiting Clinical Data', 'neutral', {{}}, 0.35);
+      activeTestCase = null;
+      updateTestCaseCardsUI(null);
+      updateGlucoseBadge('');
+      updatePedigreeBadge('');
+
+      const cohortLabel = document.getElementById('currentCohortLabel');
+      if (cohortLabel) cohortLabel.innerText = 'Custom Biometrics';
+
+      invalidateStaleResults('form_reset');
+      dismissErrorBanner();
       showToast('Patient form reset to blank');
     }}
 
-    function updateRiskOutput(riskPercent, label, tier, shapValues, baseValue = 0.35) {{
+    function newAssessment() {{
+      resetForm();
+      currentResultRecord = null;
+      const navBadge = document.getElementById('navResultsBadge');
+      if (navBadge) navBadge.classList.add('hidden');
+      switchTab('risk-prediction');
+      showToast('Started new assessment. Form fields cleared.');
+    }}
+
+    function invalidateStaleResults(reason) {{
+      if (currentResultRecord) {{
+        currentResultRecord = null;
+        const navBadge = document.getElementById('navResultsBadge');
+        if (navBadge) {{
+          navBadge.className = 'px-1.5 py-0.5 rounded bg-surface-container-high text-outline text-[11px] font-semibold';
+          navBadge.innerText = 'Stale';
+        }}
+        const emptyMsg = document.getElementById('emptyStateMsg');
+        if (emptyMsg) {{
+          if (reason === 'model_changed') {{
+            emptyMsg.innerText = 'Predictive model architecture was switched since the last calculation. Please return to the Assessment page and click "Estimate Diabetes Risk" to generate updated predictions for ' + (activeModel === 'random_forest' ? 'Random Forest' : 'XGBoost') + '.';
+          }} else {{
+            emptyMsg.innerText = 'Patient biometric inputs were modified since the last risk assessment. Please return to the Assessment page and click "Estimate Diabetes Risk" to re-calculate risk.';
+          }}
+        }}
+        document.getElementById('resultsEmptyState')?.classList.remove('hidden');
+        document.getElementById('resultsContent')?.classList.add('hidden');
+      }}
+    }}
+
+    function showAssessmentError(title, msg) {{
+      const banner = document.getElementById('assessmentErrorBanner');
+      const titleEl = document.getElementById('errorBannerTitle');
+      const msgEl = document.getElementById('errorBannerMsg');
+      if (banner && titleEl && msgEl) {{
+        titleEl.innerText = title;
+        msgEl.innerText = msg;
+        banner.classList.remove('hidden');
+        banner.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+      }}
+    }}
+
+    function dismissErrorBanner() {{
+      const banner = document.getElementById('assessmentErrorBanner');
+      if (banner) banner.classList.add('hidden');
+    }}
+
+    function renderPatientInputSummary(inputs) {{
+      const container = document.getElementById('patientInputSummaryTiles');
+      if (!container) return;
+
+      const items = [
+        {{ label: 'Glucose (OGTT)', val: inputs.Glucose, unit: 'mg/dL', status: inputs.Glucose >= 126 ? 'Elevated' : (inputs.Glucose >= 100 ? 'Impaired' : 'Normal') }},
+        {{ label: 'BMI', val: inputs.BMI, unit: 'kg/m²', status: inputs.BMI >= 30 ? 'Obese' : (inputs.BMI >= 25 ? 'Overweight' : 'Normal') }},
+        {{ label: 'Blood Pressure', val: inputs.BloodPressure, unit: 'mm Hg', status: inputs.BloodPressure >= 90 ? 'High' : (inputs.BloodPressure >= 80 ? 'Pre-HTN' : 'Normal') }},
+        {{ label: 'Age', val: inputs.Age, unit: 'years', status: inputs.Age >= 45 ? 'Mature' : 'Younger' }},
+        {{ label: 'Pregnancies', val: inputs.Pregnancies, unit: '', status: inputs.Pregnancies >= 3 ? 'Multiparous' : 'Low Parity' }},
+        {{ label: 'Serum Insulin', val: inputs.Insulin, unit: 'µU/mL', status: inputs.Insulin > 166 ? 'Elevated' : 'Normal' }},
+        {{ label: 'Triceps Skinfold', val: inputs.SkinThickness, unit: 'mm', status: inputs.SkinThickness >= 30 ? 'Elevated' : 'Normal' }},
+        {{ label: 'Pedigree Function', val: inputs.DiabetesPedigreeFunction, unit: '', status: inputs.DiabetesPedigreeFunction >= 0.5 ? 'High Risk' : 'Low Risk' }}
+      ];
+
+      container.innerHTML = items.map(item => `
+        <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col justify-between">
+          <span class="text-[11px] text-outline truncate" title="${{item.label}}">${{item.label}}</span>
+          <div class="flex items-baseline gap-1 my-0.5">
+            <span class="text-label-lg font-bold font-code-num text-on-surface">${{item.val}}</span>
+            ${{item.unit ? `<span class="text-[10px] text-outline">${{item.unit}}</span>` : ''}}
+          </div>
+          <span class="text-[10px] font-semibold ${{item.status.includes('Elevated') || item.status.includes('High') || item.status.includes('Obese') ? 'text-error' : 'text-secondary'}}">${{item.status}}</span>
+        </div>
+      `).join('');
+    }}
+
+    function renderResults(record) {{
+      if (!record || !record.data) {{
+        document.getElementById('resultsEmptyState')?.classList.remove('hidden');
+        document.getElementById('resultsContent')?.classList.add('hidden');
+        return;
+      }}
+
+      document.getElementById('resultsEmptyState')?.classList.add('hidden');
+      document.getElementById('resultsContent')?.classList.remove('hidden');
+
+      const data = record.data;
+      const prob = data.probability;
+      const probPercent = Math.round(prob * 100);
+      const threshold = data.threshold;
+      const tier = data.risk_tier;
+      const isHigh = prob >= threshold;
+      const label = isHigh ? 
+        ('Elevated Risk (Threshold: ' + threshold.toFixed(2) + ')') : 
+        ('Lower Risk (Threshold: ' + threshold.toFixed(2) + ')');
+      const shapMap = data.shap_contributions;
+      const baseVal = data.base_value;
+      const outputSpace = data.output_space || (record.model === 'random_forest' ? 'probability' : 'log_odds');
+      const marginOutput = data.margin_output !== undefined ? data.margin_output : (baseVal + Object.values(shapMap).reduce((acc, c) => acc + c.shap, 0));
+
+      // Update Result Top Banner
+      const recordBadge = document.getElementById('resultRecordBadge');
+      if (recordBadge) recordBadge.innerText = record.id;
+      const resultTimestamp = document.getElementById('resultTimestamp');
+      if (resultTimestamp) resultTimestamp.innerText = 'Generated: ' + record.timestamp;
+      const resultModelName = document.getElementById('resultModelName');
+      if (resultModelName) {{
+        resultModelName.innerText = record.model === 'random_forest' ? 
+          'Random Forest Classifier (Selected Best • Optimal Threshold: ' + threshold.toFixed(2) + ')' : 
+          'XGBoost Classifier (Tuned • Optimal Threshold: ' + threshold.toFixed(2) + ')';
+      }}
+      const resultBannerIcon = document.getElementById('resultBannerIcon');
+      if (resultBannerIcon) {{
+        resultBannerIcon.innerText = record.model === 'random_forest' ? 'forest' : 'memory';
+      }}
+      const resultThresholdBadge = document.getElementById('resultThresholdBadge');
+      if (resultThresholdBadge) resultThresholdBadge.innerText = 'Decision Threshold: ' + threshold.toFixed(2);
+
+      // Update Gauge, Pills, Spectrum, and Local SHAP Waterfall
+      updateRiskOutput(probPercent, label, tier, shapMap, baseVal, threshold, outputSpace, marginOutput, prob);
+
+      // Render Concise Patient Input Summary
+      renderPatientInputSummary(record.inputs);
+
+      // Update Navigation Badge
+      const navBadge = document.getElementById('navResultsBadge');
+      if (navBadge) {{
+        navBadge.classList.remove('hidden');
+        navBadge.className = 'px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[11px] font-bold';
+        navBadge.innerText = probPercent + '% Risk';
+      }}
+    }}
+
+    function updateRiskOutput(riskPercent, label, tier, shapValues, baseValue = 0.498, threshold = 0.48, outputSpace = 'probability', marginOutput = 0, prob = 0) {{
       const gaugeValue = document.getElementById('riskGaugeValue');
       const gaugeCircle = document.getElementById('riskGaugeCircle');
       const riskPill = document.getElementById('riskPill');
@@ -1573,6 +2123,8 @@ html_content = f'''<!DOCTYPE html>
       const adviceIcon = document.getElementById('adviceIcon');
       const confidenceValue = document.getElementById('confidenceValue');
       const riskPhenotypeDesc = document.getElementById('riskPhenotypeDesc');
+      const riskGaugeThreshold = document.getElementById('riskGaugeThreshold');
+      const brierScore = document.getElementById('brierScore');
 
       gaugeValue.innerText = riskPercent + '%';
       
@@ -1583,8 +2135,11 @@ html_content = f'''<!DOCTYPE html>
 
       spectrumMarker.style.left = Math.min(Math.max(riskPercent, 4), 94) + '%';
 
-      const cert = (75 + Math.abs(riskPercent - 50) * 0.4).toFixed(1);
-      confidenceValue.innerText = cert + '% Predictive Certainty';
+      if (riskGaugeThreshold) riskGaugeThreshold.innerText = 'Threshold: ' + threshold.toFixed(2);
+      if (brierScore) brierScore.innerText = 'Threshold: ' + threshold.toFixed(2);
+
+      const displayProb = prob > 0 ? (prob * 100).toFixed(1) : riskPercent;
+      confidenceValue.innerText = displayProb + '% Predicted Probability';
 
       if (tier === 'elevated') {{
         gaugeCircle.setAttribute('stroke', '#ba1a1a');
@@ -1593,9 +2148,9 @@ html_content = f'''<!DOCTYPE html>
         riskPillIcon.innerText = 'warning';
         glucoseBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-label-sm font-semibold';
         glucoseBadge.innerText = 'Elevated (≥126)';
-        riskPhenotypeDesc.innerText = 'Patient biometric markers align with positive diabetic phenotype under high oral glucose challenge.';
-        if (adviceTitle) adviceTitle.innerText = 'Diagnostic Follow-up Suggestion';
-        if (adviceText) adviceText.innerText = 'Recommended confirmation via laboratory HbA1c panel and fasting lipid profile given persistent elevated glucose excursion.';
+        riskPhenotypeDesc.innerText = 'Estimated diabetes risk (' + displayProb + '%) meets or exceeds the decision threshold (' + threshold.toFixed(2) + ').';
+        if (adviceTitle) adviceTitle.innerText = 'Model Assessment Context';
+        if (adviceText) adviceText.innerText = 'The model estimates elevated risk based on patient physiological inputs. Model output is an educational/research estimate and does not constitute a clinical diagnosis.';
         if (adviceIcon) {{
           adviceIcon.innerText = 'clinical_notes';
           adviceIcon.className = 'material-symbols-outlined text-error text-[22px] mt-0.5';
@@ -1607,9 +2162,9 @@ html_content = f'''<!DOCTYPE html>
         riskPillIcon.innerText = 'check_circle';
         glucoseBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary-container/50 text-on-tertiary-fixed-variant text-label-sm font-semibold';
         glucoseBadge.innerText = 'Normal (<100)';
-        riskPhenotypeDesc.innerText = 'Metabolic biomarkers within optimal non-diabetic range with protective endocrine buffering.';
-        if (adviceTitle) adviceTitle.innerText = 'Preventative Health Guidance';
-        if (adviceText) adviceText.innerText = 'Routine annual metabolic screening recommended. Maintain current balanced nutrition and physical activity.';
+        riskPhenotypeDesc.innerText = 'Estimated diabetes risk (' + displayProb + '%) is below the decision threshold (' + threshold.toFixed(2) + ').';
+        if (adviceTitle) adviceTitle.innerText = 'Model Assessment Context';
+        if (adviceText) adviceText.innerText = 'The model estimates low risk for this feature profile relative to the decision threshold. Routine preventative screening remains standard practice.';
         if (adviceIcon) {{
           adviceIcon.innerText = 'verified';
           adviceIcon.className = 'material-symbols-outlined text-tertiary text-[22px] mt-0.5';
@@ -1621,9 +2176,9 @@ html_content = f'''<!DOCTYPE html>
         riskPillIcon.innerText = 'info';
         glucoseBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-label-sm font-semibold';
         glucoseBadge.innerText = 'Impaired (100-125)';
-        riskPhenotypeDesc.innerText = 'Borderline glycemic indicators suggest pre-diabetic risk or insulin resistance.';
-        if (adviceTitle) adviceTitle.innerText = 'Lifestyle Intervention Plan';
-        if (adviceText) adviceText.innerText = 'Consider structured lifestyle modifications (dietary carbohydrate control, 150 min/wk moderate activity) and repeat fasting panel in 6 months.';
+        riskPhenotypeDesc.innerText = 'Estimated diabetes risk (' + displayProb + '%) is near the decision threshold (' + threshold.toFixed(2) + ').';
+        if (adviceTitle) adviceTitle.innerText = 'Model Assessment Context';
+        if (adviceText) adviceText.innerText = 'The model estimates intermediate risk for this profile. Clinical laboratory evaluation is recommended for definitive glycemic assessment.';
         if (adviceIcon) {{
           adviceIcon.innerText = 'alarm';
           adviceIcon.className = 'material-symbols-outlined text-amber-600 text-[22px] mt-0.5';
@@ -1639,28 +2194,52 @@ html_content = f'''<!DOCTYPE html>
       // Update Instant SHAP Summary inside gauge card
       renderInstantShapSummary(shapValues);
 
-      // Update Waterfall text
-      document.getElementById('waterfallPredictedFormula').innerText = 'f(x) = ' + (riskPercent / 100).toFixed(2);
+      // Compute Net SHAP and Driver Stats
+      let netShap = 0;
+      Object.values(shapValues).forEach(v => {{
+        if (v && typeof v.shap === 'number') {{
+          netShap += v.shap;
+        }}
+      }});
+
+      // Update Header Badges in Explainability Section
+      const expBadge = document.getElementById('explainerModelBadge');
+      if (expBadge) {{
+        expBadge.innerText = (activeModel === 'random_forest' ? 'Random Forest (Selected Best) • Th: ' : 'XGBoost (Tuned) • Th: ') + threshold.toFixed(2);
+      }}
+      const netBadge = document.getElementById('explainabilityNetBadge');
+      if (netBadge) {{
+        netBadge.innerText = (netShap >= 0 ? '+' : '') + netShap.toFixed(3) + ' Net SHAP';
+      }}
+
+      // Update Waterfall text and formula
+      const waterfallFormulaText = document.getElementById('waterfallFormulaText');
+      if (waterfallFormulaText) {{
+        const pStr = (prob > 0 ? prob.toFixed(3) : (riskPercent / 100).toFixed(3));
+        if (outputSpace === 'probability') {{
+          waterfallFormulaText.innerHTML = 'Features contribute additively in <strong>probability space</strong>: Expected baseline <code class="bg-surface px-1.5 py-0.5 rounded text-primary font-mono font-semibold">E[f(x)] = ' + baseValue.toFixed(3) + '</code> + Net SHAP <code class="bg-surface px-1.5 py-0.5 rounded text-secondary font-mono font-semibold">' + (netShap >= 0 ? '+' : '') + netShap.toFixed(3) + '</code> = Predicted Risk Probability <code class="bg-surface px-1.5 py-0.5 rounded text-error font-mono font-bold">p = ' + pStr + '</code>.';
+        }} else {{
+          waterfallFormulaText.innerHTML = 'Features contribute additively in <strong>log-odds margin space</strong>: Baseline margin <code class="bg-surface px-1.5 py-0.5 rounded text-primary font-mono font-semibold">E[f(x)] = ' + baseValue.toFixed(3) + '</code> + Net SHAP <code class="bg-surface px-1.5 py-0.5 rounded text-secondary font-mono font-semibold">' + (netShap >= 0 ? '+' : '') + netShap.toFixed(3) + '</code> = Margin <code class="bg-surface px-1.5 py-0.5 rounded text-secondary font-mono font-semibold">f(x) = ' + marginOutput.toFixed(3) + '</code> → <code class="bg-surface px-1.5 py-0.5 rounded text-error font-mono font-bold">p = ' + pStr + '</code> (via sigmoid).';
+        }}
+      }}
       
-      // Update Stepper
-      renderCumulativeStepper(baseValue, shapValues, riskPercent / 100);
-      
-      // Update Divergence Rows
+      // Update Divergence Rows (single waterfall visualization)
       renderDivergenceChart(shapValues);
       
-      // Update Increasing & Decreasing factor cards
+      // Update Compact Key Drivers (positive & negative summaries)
       renderFactorCards(shapValues);
     }}
 
     function renderInstantShapSummary(shapMap) {{
       const container = document.getElementById('instantShapPills');
       const badge = document.getElementById('shapSummaryBadge');
+      if (!container) return;
       container.innerHTML = '';
 
       let net = 0;
       const sorted = Object.entries(shapMap).sort((a,b) => Math.abs(b[1].shap) - Math.abs(a[1].shap));
       sorted.forEach(([_, info]) => net += info.shap);
-      badge.innerText = (net >= 0 ? '+' : '') + net.toFixed(2) + ' Net SHAP';
+      if (badge) badge.innerText = (net >= 0 ? '+' : '') + net.toFixed(2) + ' Net SHAP';
 
       // Pick top 3 absolute features
       const top3 = sorted.slice(0, 3);
@@ -1676,78 +2255,34 @@ html_content = f'''<!DOCTYPE html>
       }});
     }}
 
-    function renderCumulativeStepper(baseValue, shapMap, finalScore) {{
+    function renderCumulativeStepper(baseValue, shapMap, finalScore, outputSpace = 'probability', marginOutput = 0) {{
+      // Retained as clean no-op for backward compatibility after consolidation
       const container = document.getElementById('stepperContainer');
-      container.innerHTML = '';
-
-      // Base rate
-      const baseEl = document.createElement('div');
-      baseEl.className = 'px-3 py-2 rounded-lg bg-surface text-center shrink-0 border border-outline-variant/30';
-      baseEl.innerHTML = `<span class="text-[11px] text-outline block font-medium">Base E[f(x)]</span><span class="font-code-num text-label-md font-bold text-on-surface">${{baseValue.toFixed(2)}}</span>`;
-      container.appendChild(baseEl);
-
-      const sortedEntries = Object.entries(shapMap).sort((a,b) => Math.abs(b[1].shap) - Math.abs(a[1].shap));
-      
-      // Take top 4 influential and group remainder
-      const topFew = sortedEntries.slice(0, 4);
-      const remainder = sortedEntries.slice(4);
-      let remSum = 0;
-      remainder.forEach(r => remSum += r[1].shap);
-
-      topFew.forEach(([feat, info]) => {{
-        const isPos = info.shap >= 0;
-        const icon = document.createElement('span');
-        icon.className = 'material-symbols-outlined text-outline text-[16px] shrink-0';
-        icon.innerText = isPos ? 'add' : 'remove';
-        container.appendChild(icon);
-
-        const card = document.createElement('div');
-        card.className = `px-3 py-2 rounded-lg ${{isPos ? 'bg-error-container/40' : 'bg-secondary-container/40'}} text-center shrink-0 border border-outline-variant/20`;
-        const valStr = (isPos ? '+' : '') + info.shap.toFixed(2);
-        card.innerHTML = `<span class="text-[11px] ${{isPos ? 'text-on-error-container' : 'text-on-secondary-container'}} block font-medium">${{feat.replace('DiabetesPedigreeFunction', 'Pedigree').replace('BloodPressure', 'BP').replace('SkinThickness', 'Skin')}}</span><span class="font-code-num text-label-md font-bold ${{isPos ? 'text-error' : 'text-secondary'}}">${{valStr}}</span>`;
-        container.appendChild(card);
-      }});
-
-      if (remainder.length > 0 && Math.abs(remSum) >= 0.005) {{
-        const isPos = remSum >= 0;
-        const icon = document.createElement('span');
-        icon.className = 'material-symbols-outlined text-outline text-[16px] shrink-0';
-        icon.innerText = isPos ? 'add' : 'remove';
-        container.appendChild(icon);
-
-        const card = document.createElement('div');
-        card.className = `px-3 py-2 rounded-lg ${{isPos ? 'bg-error-container/30' : 'bg-secondary-container/30'}} text-center shrink-0 border border-outline-variant/20`;
-        const valStr = (isPos ? '+' : '') + remSum.toFixed(2);
-        card.innerHTML = `<span class="text-[11px] ${{isPos ? 'text-on-error-container' : 'text-on-secondary-container'}} block font-medium">Others</span><span class="font-code-num text-label-md font-bold ${{isPos ? 'text-error' : 'text-secondary'}}">${{valStr}}</span>`;
-        container.appendChild(card);
-      }}
-
-      // Final Arrow and Score
-      const arrow = document.createElement('span');
-      arrow.className = 'material-symbols-outlined text-primary text-[20px] shrink-0';
-      arrow.innerText = 'arrow_right_alt';
-      container.appendChild(arrow);
-
-      const finalEl = document.createElement('div');
-      finalEl.className = 'px-4 py-2 rounded-lg bg-primary text-on-primary text-center shrink-0 shadow-xs';
-      finalEl.innerHTML = `<span class="text-[11px] text-primary-fixed block font-medium">Final Score f(x)</span><span class="font-code-num text-label-md font-bold">${{finalScore.toFixed(2)}} (${{Math.round(finalScore * 100)}}%)</span>`;
-      container.appendChild(finalEl);
+      if (container) container.innerHTML = '';
     }}
 
     function renderDivergenceChart(shapMap) {{
       const container = document.getElementById('divergenceRows');
+      if (!container) return;
       container.innerHTML = '';
 
       const features = [
         {{ key: 'Glucose', label: 'Glucose', unit: 'mg/dL' }},
         {{ key: 'BMI', label: 'BMI', unit: 'kg/m²' }},
         {{ key: 'Age', label: 'Age', unit: 'yr' }},
-        {{ key: 'BloodPressure', label: 'Blood Pressure', unit: 'mm' }},
-        {{ key: 'Pregnancies', label: 'Pregnancies', unit: 'count' }},
-        {{ key: 'DiabetesPedigreeFunction', label: 'Pedigree Func', unit: '' }},
-        {{ key: 'SkinThickness', label: 'Skin Thickness', unit: 'mm' }},
-        {{ key: 'Insulin', label: 'Insulin', unit: 'µU/mL' }}
+        {{ key: 'DiabetesPedigreeFunction', label: 'Pedigree', unit: '' }},
+        {{ key: 'Pregnancies', label: 'Pregnancies', unit: '' }},
+        {{ key: 'Insulin', label: 'Insulin', unit: 'µU/mL' }},
+        {{ key: 'BloodPressure', label: 'Blood Pressure', unit: 'mm Hg' }},
+        {{ key: 'SkinThickness', label: 'Skinfold', unit: 'mm' }}
       ];
+
+      // Calculate max absolute SHAP for responsive, proportional scaling
+      let maxAbs = 0.05;
+      features.forEach(f => {{
+        const item = shapMap[f.key] || {{ shap: 0 }};
+        if (Math.abs(item.shap) > maxAbs) maxAbs = Math.abs(item.shap);
+      }});
 
       features.forEach(f => {{
         const item = shapMap[f.key] || {{ shap: 0, val: 0 }};
@@ -1755,7 +2290,7 @@ html_content = f'''<!DOCTYPE html>
         const val = item.val;
         const isPos = shap >= 0;
         const absVal = Math.abs(shap);
-        const barWidth = Math.min(Math.round((absVal / 0.35) * 85), 90);
+        const barWidth = Math.min(Math.round((absVal / maxAbs) * 88), 92);
 
         const row = document.createElement('div');
         row.className = 'grid grid-cols-12 items-center text-body-sm py-1.5 hover:bg-surface-container/50 px-2 rounded-lg transition-colors';
@@ -1764,8 +2299,8 @@ html_content = f'''<!DOCTYPE html>
 
         if (isPos) {{
           row.innerHTML = `
-            <div class="col-span-3 font-semibold text-on-surface truncate" title="${{labelText}}">${{labelText}}</div>
-            <div class="col-span-4 flex justify-end"></div>
+            <div class="col-span-4 font-semibold text-on-surface truncate" title="${{labelText}}">${{labelText}}</div>
+            <div class="col-span-3 flex justify-end"></div>
             <div class="col-span-1 flex justify-center">
               <div class="w-0.5 h-6 bg-outline-variant"></div>
             </div>
@@ -1776,8 +2311,8 @@ html_content = f'''<!DOCTYPE html>
           `;
         }} else {{
           row.innerHTML = `
-            <div class="col-span-3 font-semibold text-on-surface truncate" title="${{labelText}}">${{labelText}}</div>
-            <div class="col-span-4 flex items-center justify-end gap-2">
+            <div class="col-span-4 font-semibold text-on-surface truncate" title="${{labelText}}">${{labelText}}</div>
+            <div class="col-span-3 flex items-center justify-end gap-2">
               <span class="font-code-num text-label-sm text-secondary font-bold">${{shap.toFixed(2)}}</span>
               <div class="h-5 bg-secondary rounded-l-md transition-all duration-500" style="width: ${{barWidth}}%;"></div>
             </div>
@@ -1799,6 +2334,8 @@ html_content = f'''<!DOCTYPE html>
       const netNegBadge = document.getElementById('netNegBadge');
       const primaryDriverText = document.getElementById('primaryDriverText');
 
+      if (!incContainer || !decContainer) return;
+
       incContainer.innerHTML = '';
       decContainer.innerHTML = '';
 
@@ -1809,44 +2346,44 @@ html_content = f'''<!DOCTYPE html>
 
       const explanations = {{
         Glucose: {{
-          pos: 'Elevated plasma concentration exceeds normal glycemic clearance capacity.',
-          neg: 'Optimal fasting / post-challenge glycemia within healthy reference range.'
+          pos: "Elevated glycemia is the primary risk-increasing factor.",
+          neg: "Normoglycemic glucose level lowers estimated diabetes probability."
         }},
         BMI: {{
-          pos: 'Weight in excess of optimal body mass promotes peripheral insulin insensitivity.',
-          neg: 'Normal body mass index reduces systemic metabolic resistance.'
+          pos: "Body mass index contributes toward elevated metabolic risk.",
+          neg: "Healthy BMI level exerts a protective contribution."
         }},
         Age: {{
-          pos: 'Advancing chronological age correlates with beta-cell secretory depletion.',
-          neg: 'Younger age profile preserves endogenous metabolic flexibility.'
+          pos: "Age profile adds positive attribution to estimated risk.",
+          neg: "Younger age bracket contributes toward lower risk."
         }},
         DiabetesPedigreeFunction: {{
-          pos: 'Strong polygenic inheritance score indicates familial predisposition.',
-          neg: 'Lower familial diabetes density confers protective genetic buffer.'
+          pos: "Familial diabetes history increases model risk output.",
+          neg: "Low pedigree score contributes protectively."
         }},
         BloodPressure: {{
-          pos: 'Elevated vascular tension suggests microvascular or metabolic stress.',
-          neg: 'Optimal diastolic pressure within normal vascular boundaries.'
+          pos: "Elevated blood pressure adds moderate risk attribution.",
+          neg: "Diastolic blood pressure reading provides protective contribution."
         }},
         Pregnancies: {{
-          pos: 'Elevated parity increases historical gestational metabolic challenge.',
-          neg: 'Lower parity score relative to high-risk multiparous cohorts.'
+          pos: "Higher pregnancy parity contributes toward risk.",
+          neg: "Lower parity contributes toward lower predicted risk."
         }},
         SkinThickness: {{
-          pos: 'Elevated triceps skinfold reflects increased subcutaneous adiposity.',
-          neg: 'Subcutaneous adipose distribution within moderate parameters.'
+          pos: "Triceps skinfold contributes positively to risk attribution.",
+          neg: "Skinfold measurement contributes protectively."
         }},
         Insulin: {{
-          pos: 'Elevated circulating insulin indicates compensatory pancreatic hypersecretion.',
-          neg: 'Endogenous insulin response maintains baseline pancreatic function.'
+          pos: "Serum insulin reading adds positive risk contribution.",
+          neg: "Normal fasting insulin reduces estimated risk probability."
         }}
       }};
 
       Object.entries(shapMap).forEach(([feat, info]) => {{
-        if (info.shap >= 0) {{
+        if (info.shap > 0.0001) {{
           sumPos += info.shap;
           posList.push({{ feat, ...info }});
-        }} else {{
+        }} else if (info.shap < -0.0001) {{
           sumNeg += info.shap;
           negList.push({{ feat, ...info }});
         }}
@@ -1855,148 +2392,268 @@ html_content = f'''<!DOCTYPE html>
       posList.sort((a,b) => b.shap - a.shap);
       negList.sort((a,b) => a.shap - b.shap);
 
-      netPosBadge.innerText = '+' + sumPos.toFixed(2) + ' Net';
-      netNegBadge.innerText = sumNeg.toFixed(2) + ' Net';
+      if (netPosBadge) netPosBadge.innerText = '+' + sumPos.toFixed(2) + ' Net';
+      if (netNegBadge) netNegBadge.innerText = sumNeg.toFixed(2) + ' Net';
 
-      if (posList.length > 0) {{
-        const topDriver = posList[0];
-        const pct = Math.round((topDriver.shap / (sumPos || 1)) * 100);
-        primaryDriverText.innerHTML = `<span class="material-symbols-outlined text-[20px] text-outline">info</span> Primary driver: ${{topDriver.feat}} accounts for ~${{pct}}% of total risk inflation.`;
-      }} else {{
-        primaryDriverText.innerHTML = `<span class="material-symbols-outlined text-[20px] text-secondary">verified</span> No significant risk-inflating features detected.`;
+      if (primaryDriverText) {{
+        if (posList.length > 0) {{
+          const topDriver = posList[0];
+          const pct = Math.round((topDriver.shap / (sumPos || 1)) * 100);
+          primaryDriverText.innerHTML = `<span class="material-symbols-outlined text-[18px] text-primary">info</span> <span><strong>Primary Risk Driver:</strong> ${{topDriver.feat}} (${{topDriver.val}}) accounts for ~${{pct}}% of positive attribution (+${{topDriver.shap.toFixed(2)}} SHAP).</span>`;
+        }} else if (negList.length > 0) {{
+          const topProt = negList[0];
+          primaryDriverText.innerHTML = `<span class="material-symbols-outlined text-[18px] text-secondary">verified</span> <span><strong>Favorable Profile:</strong> ${{topProt.feat}} (${{topProt.val}}) is the primary protective factor (${{topProt.shap.toFixed(2)}} SHAP).</span>`;
+        }} else {{
+          primaryDriverText.innerHTML = `<span class="material-symbols-outlined text-[18px] text-outline">tune</span> <span>Neutral risk attribution profile across evaluated biomarkers.</span>`;
+        }}
       }}
 
-      // Render Positive
+      // Render top positive drivers (limit to top 2 for compact presentation)
       if (posList.length === 0) {{
-        incContainer.innerHTML = '<div class="text-body-md text-outline italic py-4">No significant risk-increasing factors.</div>';
+        incContainer.innerHTML = '<div class="text-body-sm text-outline italic py-1">No positive risk-increasing contributions.</div>';
       }} else {{
-        posList.forEach(item => {{
+        posList.slice(0, 2).forEach(item => {{
           const el = document.createElement('div');
-          el.className = 'flex flex-col gap-1.5 py-1.5';
-          const barPct = Math.min(Math.round((item.shap / 0.35) * 85), 100);
-          const desc = explanations[item.feat]?.pos || 'Elevates probabilistic diabetes risk.';
+          el.className = 'flex flex-col gap-1 p-2 rounded-lg bg-surface border border-outline-variant/20';
+          const desc = explanations[item.feat]?.pos || 'Contributes toward higher estimated risk.';
           el.innerHTML = `
-            <div class="flex items-center justify-between text-body-lg">
-              <span class="font-bold text-on-surface text-[17px] tracking-tight">${{item.feat}}: <span class="font-code-num font-semibold text-on-surface-variant">${{item.val}}</span></span>
-              <span class="font-code-num font-black text-error text-[17px]">+${{item.shap.toFixed(2)}} SHAP</span>
+            <div class="flex items-center justify-between text-label-sm">
+              <span class="font-bold text-on-surface">${{item.feat}} <span class="font-code-num font-normal text-on-surface-variant">(${{item.val}})</span></span>
+              <span class="font-code-num font-bold text-error">+${{item.shap.toFixed(2)}} SHAP</span>
             </div>
-            <div class="w-full h-3 rounded-full bg-surface-container overflow-hidden my-0.5 shadow-inner">
-              <div class="h-full bg-error rounded-full transition-all duration-500" style="width: ${{barPct}}%;"></div>
-            </div>
-            <span class="text-body-md text-[15px] text-on-surface-variant leading-relaxed font-normal">${{desc}}</span>
+            <span class="text-[12px] text-on-surface-variant leading-snug">${{desc}}</span>
           `;
           incContainer.appendChild(el);
         }});
       }}
 
-      // Render Negative
+      // Render top negative/protective drivers (limit to top 2 for compact presentation)
       if (negList.length === 0) {{
-        decContainer.innerHTML = '<div class="text-body-md text-outline italic py-4">No protective factors identified.</div>';
+        decContainer.innerHTML = '<div class="text-body-sm text-outline italic py-1">No protective contributions.</div>';
       }} else {{
-        negList.forEach(item => {{
+        negList.slice(0, 2).forEach(item => {{
           const el = document.createElement('div');
-          el.className = 'flex flex-col gap-1.5 py-1.5';
-          const barPct = Math.min(Math.round((Math.abs(item.shap) / 0.35) * 85), 100);
-          const desc = explanations[item.feat]?.neg || 'Reduces probabilistic diabetes risk.';
+          el.className = 'flex flex-col gap-1 p-2 rounded-lg bg-surface border border-outline-variant/20';
+          const desc = explanations[item.feat]?.neg || 'Contributes toward lower estimated risk.';
           el.innerHTML = `
-            <div class="flex items-center justify-between text-body-lg">
-              <span class="font-bold text-on-surface text-[17px] tracking-tight">${{item.feat}}: <span class="font-code-num font-semibold text-on-surface-variant">${{item.val}}</span></span>
-              <span class="font-code-num font-black text-secondary text-[17px]">${{item.shap.toFixed(2)}} SHAP</span>
+            <div class="flex items-center justify-between text-label-sm">
+              <span class="font-bold text-on-surface">${{item.feat}} <span class="font-code-num font-normal text-on-surface-variant">(${{item.val}})</span></span>
+              <span class="font-code-num font-bold text-secondary">${{item.shap.toFixed(2)}} SHAP</span>
             </div>
-            <div class="w-full h-3 rounded-full bg-surface-container overflow-hidden my-0.5 shadow-inner">
-              <div class="h-full bg-secondary rounded-full transition-all duration-500" style="width: ${{barPct}}%;"></div>
-            </div>
-            <span class="text-body-md text-[15px] text-on-surface-variant leading-relaxed font-normal">${{desc}}</span>
+            <span class="text-[12px] text-on-surface-variant leading-snug">${{desc}}</span>
           `;
           decContainer.appendChild(el);
         }});
       }}
     }}
 
-    function calculateRisk(isLive = false, forcedRisk = null) {{
-      const gluc = parseFloat(document.getElementById('inputGlucose').value);
-      const bmi = parseFloat(document.getElementById('inputBMI').value);
-      const age = parseFloat(document.getElementById('inputAge').value);
-      const bp = parseFloat(document.getElementById('inputBP').value);
-      const preg = parseFloat(document.getElementById('inputPregnancies').value);
-      const ins = parseFloat(document.getElementById('inputInsulin').value);
-      const skin = parseFloat(document.getElementById('inputSkin').value);
-      const ped = parseFloat(document.getElementById('inputPedigree').value);
+    function validateFormInputs() {{
+      const fields = [
+        {{ id: 'inputGlucose', name: 'Glucose (OGTT)', min: 40, max: 300 }},
+        {{ id: 'inputBMI', name: 'Body Mass Index (BMI)', min: 10, max: 70 }},
+        {{ id: 'inputAge', name: 'Age', min: 1, max: 120 }},
+        {{ id: 'inputBP', name: 'Blood Pressure', min: 30, max: 160 }},
+        {{ id: 'inputPregnancies', name: 'Pregnancies', min: 0, max: 20 }},
+        {{ id: 'inputInsulin', name: 'Serum Insulin', min: 0, max: 900 }},
+        {{ id: 'inputSkin', name: 'Triceps Skinfold', min: 0, max: 99 }},
+        {{ id: 'inputPedigree', name: 'Diabetes Pedigree Function', min: 0.01, max: 3.0 }}
+      ];
 
-      if (isNaN(gluc) && isNaN(bmi) && isNaN(age)) {{
-        resetForm();
+      for (const f of fields) {{
+        const el = document.getElementById(f.id);
+        if (!el) continue;
+        const v = el.value.trim();
+        if (v === '') {{
+          showToast('Validation Error: ' + f.name + ' is required');
+          el.focus();
+          return false;
+        }}
+        const num = parseFloat(v);
+        if (isNaN(num)) {{
+          showToast('Validation Error: ' + f.name + ' must be a valid number');
+          el.focus();
+          return false;
+        }}
+        if (num < f.min || num > f.max) {{
+          showToast('Validation Error: ' + f.name + ' must be between ' + f.min + ' and ' + f.max);
+          el.focus();
+          return false;
+        }}
+      }}
+      return true;
+    }}
+
+    async function calculateRisk() {{
+      // Prevent duplicate concurrent requests
+      if (isCalculating) return;
+
+      // Validate inputs
+      if (!validateFormInputs()) {{
         return;
       }}
+
+      dismissErrorBanner();
+
+      const glucVal = parseFloat(document.getElementById('inputGlucose').value);
+      const bmiVal = parseFloat(document.getElementById('inputBMI').value);
+      const ageVal = parseFloat(document.getElementById('inputAge').value);
+      const bpVal = parseFloat(document.getElementById('inputBP').value);
+      const pregVal = parseFloat(document.getElementById('inputPregnancies').value);
+      const insVal = parseFloat(document.getElementById('inputInsulin').value);
+      const skinVal = parseFloat(document.getElementById('inputSkin').value);
+      const pedVal = parseFloat(document.getElementById('inputPedigree').value);
+
+      const submittedInputs = {{
+        Pregnancies: pregVal,
+        Glucose: glucVal,
+        BloodPressure: bpVal,
+        SkinThickness: skinVal,
+        Insulin: insVal,
+        BMI: bmiVal,
+        DiabetesPedigreeFunction: pedVal,
+        Age: ageVal
+      }};
+
+      const payload = {{
+        model: activeModel,
+        features: submittedInputs
+      }};
 
       const btn = document.getElementById('btnCalculate');
       const icon = document.getElementById('calcIcon');
       const text = document.getElementById('calcText');
+      const modal = document.getElementById('inferenceTransitionModal');
+      const progressBar = document.getElementById('inferenceProgressBar');
+      const modelTag = document.getElementById('inferenceModelTag');
 
-      const executeCalculation = () => {{
-        // Model-specific Shapley weights:
-        // XGBoost: higher gain on Glucose
-        // Random Forest: higher weight on BMI & Pedigree
-        const glucFactor = activeModel === 'random_forest' ? 0.0051 : 0.0055;
-        const bmiFactor = activeModel === 'random_forest' ? 0.0185 : 0.0160;
-        const pedFactor = activeModel === 'random_forest' ? 0.165 : 0.140;
+      if (modelTag) {{
+        modelTag.innerText = activeModel === 'random_forest' ? 'Random Forest (Selected Best)' : 'XGBoost (Tuned)';
+      }}
 
-        const shap_gluc = ( (gluc || 117) - 110 ) * glucFactor;
-        const shap_bmi = ( (bmi || 32) - 25 ) * bmiFactor;
-        const shap_age = ( (age || 29) - 30 ) * 0.004;
-        const shap_ped = ( (ped || 0.37) - 0.35 ) * pedFactor;
-        const shap_bp = ( (bp || 72) - 75 ) * 0.002;
-        const shap_preg = ( (preg || 2) - 2.5 ) * 0.018;
-        const shap_skin = ( (skin || 23) - 25 ) * 0.002;
-        const shap_ins = ( (ins || 80) - 100 ) * 0.0003;
+      isCalculating = true;
+      const thisRequestId = ++activeRequestId;
 
-        const baseVal = 0.35;
-        const totalShap = shap_gluc + shap_bmi + shap_age + shap_ped + shap_bp + shap_preg + shap_skin + shap_ins;
-        
-        let calculatedRisk = forcedRisk !== null ? forcedRisk : Math.round(Math.min(Math.max((baseVal + totalShap) * 100, 4), 98));
-        
-        const shapMap = {{
-          Glucose: {{ val: gluc || 117, shap: shap_gluc }},
-          BMI: {{ val: bmi || 32, shap: shap_bmi }},
-          Age: {{ val: age || 29, shap: shap_age }},
-          DiabetesPedigreeFunction: {{ val: ped || 0.37, shap: shap_ped }},
-          BloodPressure: {{ val: bp || 72, shap: shap_bp }},
-          Pregnancies: {{ val: preg || 2, shap: shap_preg }},
-          SkinThickness: {{ val: skin || 23, shap: shap_skin }},
-          Insulin: {{ val: ins || 80, shap: shap_ins }}
-        }};
-
-        let tier = 'moderate';
-        let label = 'Moderate Predicted Risk';
-        if (calculatedRisk >= 60) {{
-          tier = 'elevated';
-          label = 'Higher Predicted Risk';
-        }} else if (calculatedRisk <= 30) {{
-          tier = 'low';
-          label = 'Low Predicted Risk';
-        }}
-
-        updateRiskOutput(calculatedRisk, label, tier, shapMap, baseVal);
-
-        if (!isLive) {{
-          showToast(`${{activeModel === 'random_forest' ? 'Random Forest' : 'XGBoost'}} SHAP risk calculated successfully`);
-        }}
-      }};
-
-      if (!isLive) {{
+      if (btn) btn.disabled = true;
+      if (icon) {{
         icon.innerText = 'sync';
         icon.classList.add('animate-spin');
-        text.innerText = 'Calculating SHAP Values...';
-        btn.disabled = true;
+      }}
+      if (text) text.innerText = 'Running Model Inference...';
 
-        setTimeout(() => {{
+      // Helper to update stages in 4-stage animated transition experience
+      function setStage(stageNum, status, isDone = false) {{
+        for (let s = 1; s <= 4; s++) {{
+          const item = document.getElementById('stageItem' + s);
+          const iconEl = document.getElementById('stageIcon' + s);
+          const statusEl = document.getElementById('stageStatus' + s);
+          if (!item || !iconEl || !statusEl) continue;
+
+          if (s < stageNum || (s === stageNum && isDone)) {{
+            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container border border-secondary/30 transition-all';
+            iconEl.className = 'w-7 h-7 rounded-lg bg-secondary text-on-secondary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs';
+            iconEl.innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span>';
+            statusEl.className = 'text-[11px] font-mono font-bold text-secondary';
+            statusEl.innerText = 'Completed';
+          }} else if (s === stageNum) {{
+            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container-high border-2 border-primary shadow-sm transition-all';
+            iconEl.className = 'w-7 h-7 rounded-lg bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs';
+            iconEl.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span>';
+            statusEl.className = 'text-[11px] font-mono font-bold text-primary';
+            statusEl.innerText = status || 'Processing...';
+          }} else {{
+            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60';
+            iconEl.className = 'w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5';
+            iconEl.innerHTML = '<span>' + s + '</span>';
+            statusEl.className = 'text-[11px] font-mono font-bold text-outline';
+            statusEl.innerText = 'Queued';
+          }}
+        }}
+        if (progressBar) {{
+          const pcts = [25, 50, 75, 100];
+          progressBar.style.width = pcts[stageNum - 1] + '%';
+        }}
+      }}
+
+      // Display animated four-stage transition experience
+      if (modal) modal.classList.remove('hidden');
+      setStage(1, 'Validating biometrics...');
+
+      const port = (window.PREDICTION_API_PORT || 8502);
+      const host = (window.location && window.location.hostname && window.location.hostname !== '') ? window.location.hostname : '127.0.0.1';
+      const apiUrl = 'http://' + host + ':' + port + '/api/predict';
+
+      const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+      try {{
+        const fetchPromise = fetch(apiUrl, {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify(payload)
+        }});
+
+        await delay(350);
+        setStage(2, 'Running ensemble...');
+
+        await delay(350);
+        setStage(3, 'Calculating TreeSHAP...');
+
+        const response = await fetchPromise;
+
+        if (!response.ok) {{
+          const errData = await response.json().catch(() => ({{}}));
+          throw new Error(errData.detail || errData.error || ('HTTP ' + response.status));
+        }}
+
+        const data = await response.json();
+
+        // Prevent late responses from replacing newer results
+        if (thisRequestId !== activeRequestId) {{
+          console.warn("Discarding stale inference response for request #" + thisRequestId);
+          return;
+        }}
+
+        await delay(350);
+        setStage(4, 'Synthesizing interpretation...', true);
+
+        await delay(300);
+
+        // Store result record
+        currentResultRecord = {{
+          id: 'REC-' + Math.floor(100000 + Math.random() * 900000),
+          timestamp: new Date().toLocaleTimeString([], {{ hour: '2-digit', minute: '2-digit', second: '2-digit' }}),
+          model: activeModel,
+          modelName: data.model_name || (activeModel === 'random_forest' ? 'Random Forest' : 'XGBoost'),
+          inputs: submittedInputs,
+          data: data,
+          isStale: false
+        }};
+
+        // Render dedicated results view
+        renderResults(currentResultRecord);
+
+        // Hide transition modal
+        if (modal) modal.classList.add('hidden');
+
+        // Navigate to dedicated results page
+        switchTab('prediction-results');
+
+        showToast(data.model_name + ' TreeSHAP inference completed (p=' + (data.probability * 100).toFixed(1) + '%)');
+
+      }} catch (err) {{
+        console.error('Inference API error:', err);
+        if (modal) modal.classList.add('hidden');
+
+        // Remain on assessment page and show useful error and retry action
+        showAssessmentError('Inference Service Unreachable', 'Backend Error: ' + err.message + ' (Ensure inference server is running on port ' + port + ')');
+        showToast('Backend Error: ' + err.message);
+      }} finally {{
+        isCalculating = false;
+        if (btn) btn.disabled = false;
+        if (icon) {{
           icon.classList.remove('animate-spin');
           icon.innerText = 'calculate';
-          text.innerText = 'Estimate Diabetes Risk';
-          btn.disabled = false;
-          executeCalculation();
-        }}, 450);
-      }} else {{
-        executeCalculation();
+        }}
+        if (text) text.innerText = 'Estimate Diabetes Risk';
       }}
     }}
 
@@ -2011,7 +2668,7 @@ html_content = f'''<!DOCTYPE html>
       const ped = document.getElementById('inputPedigree').value || '0.672';
       const risk = document.getElementById('riskGaugeValue').innerText;
       const riskLabel = document.getElementById('riskPillText').innerText;
-      const modelDisplayName = activeModel === 'random_forest' ? 'Random Forest Classifier (AUC: 0.826)' : 'XGBoost Classifier (AUC: 0.841)';
+      const modelDisplayName = activeModel === 'random_forest' ? 'Random Forest Classifier (Optimal Threshold: 0.48)' : 'XGBoost Classifier (Optimal Threshold: 0.42)';
 
       const reportHtml = `
         <div class="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2">
@@ -2052,7 +2709,7 @@ html_content = f'''<!DOCTYPE html>
         </div>
 
         <div class="p-3 rounded-lg bg-surface-container text-[12px] text-on-surface-variant">
-          <strong>Notice:</strong> This computational report is generated for investigational clinical decision support. Final diagnostic determinations must be performed by a licensed physician in conjunction with formal venous plasma HbA1c tests.
+          <strong>Notice:</strong> This model is an educational/research prototype and does not replace professional medical assessment or provide a clinical diagnosis. Final clinical evaluations must be performed by a qualified healthcare professional.
         </div>
       `;
 
@@ -2077,10 +2734,10 @@ html_content = f'''<!DOCTYPE html>
           pedigree_function: parseFloat(document.getElementById('inputPedigree').value) || 0.672
         }},
         model_prediction: {{
-          estimated_risk: document.getElementById('riskGaugeValue').innerText,
-          risk_category: document.getElementById('riskPillText').innerText,
-          baseline_rate: 0.35,
-          engine: "TreeSHAP (Lundberg et al.)"
+          estimated_risk_probability: document.getElementById('riskGaugeValue').innerText,
+          risk_classification: document.getElementById('riskPillText').innerText,
+          decision_threshold: activeModel === 'random_forest' ? 0.48 : 0.42,
+          engine: "TreeSHAP"
         }}
       }};
       navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
@@ -2110,10 +2767,38 @@ html_content = f'''<!DOCTYPE html>
       console.warn('Lenis smooth scrolling fallback to native CSS:', e);
     }}
 
-    // Auto calculate initial default case on load
+    // Initialize application state and event listeners on load
     window.addEventListener('DOMContentLoaded', () => {{
-      switchImportanceView('xgb');
-      calculateRisk(true, 68);
+      changeModel('random_forest');
+      switchImportanceView('rf');
+
+      // Attach invalidation & change listeners to all 8 form inputs
+      ['inputGlucose', 'inputBMI', 'inputAge', 'inputBP', 'inputPregnancies', 'inputInsulin', 'inputSkin', 'inputPedigree'].forEach(id => {{
+        const el = document.getElementById(id);
+        if (el) {{
+          el.addEventListener('input', () => {{
+            handleFormInputChange(id);
+            invalidateStaleResults('inputs_changed');
+          }});
+          el.addEventListener('change', () => {{
+            handleFormInputChange(id);
+            invalidateStaleResults('inputs_changed');
+          }});
+        }}
+      }});
+
+      // Route based on URL hash
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'results' || hash === 'prediction-results') {{
+        switchTab('prediction-results', false);
+      }} else if (hash === 'explainability-xai') {{
+        switchTab('explainability-xai', false);
+      }} else if (hash === 'model-benchmark-and-insights' || hash === 'benchmark') {{
+        switchTab('model-benchmark-and-insights', false);
+      }} else {{
+        switchTab('risk-prediction', false);
+      }}
+
       syncFrameHeight();
     }});
     window.addEventListener('resize', syncFrameHeight);

@@ -2,15 +2,16 @@
 SHAP Analysis and Model Explainability Module for Diabetes Risk Prediction.
 
 Implements:
-1. SHAP TreeExplainer initialization and caching
+1. SHAP TreeExplainer initialization and multi-model support (Random Forest & XGBoost)
 2. Global feature importance calculation (Mean Absolute SHAP)
 3. SHAP Beeswarm summary plots and bar plots
 4. SHAP Dependence / Feature Effect plots
 5. Local individual prediction explanations (Waterfall plots)
-6. Comparison of native XGBoost feature importance vs SHAP importance
-7. Reusable explain_prediction API for real-time inference explainability
+6. Comparison of native model feature importance vs SHAP importance
+7. Reusable explain_prediction API with metadata-driven imputation and thresholding
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 import pickle
@@ -26,6 +27,7 @@ from ml.model_utils import (
     TARGET_COLUMN,
     ZERO_AS_MISSING,
     get_project_root,
+    load_metadata,
     load_processed_data,
     split_data,
 )
@@ -34,13 +36,12 @@ from ml.model_utils import (
 def load_best_model(model_path: Optional[Union[str, Path]] = None) -> Any:
     """
     Load the best trained model (models/best_model.pkl).
-    Accepts XGBoost (default best model) or any scikit-learn compatible classifier.
+    Accepts Random Forest or XGBoost.
     """
     if model_path is None:
         model_path = get_project_root() / "models" / "best_model.pkl"
     path = Path(model_path)
     if not path.exists():
-        # Fallback to joblib if pkl not found
         path = path.with_suffix(".joblib")
     if not path.exists():
         raise FileNotFoundError(f"Model file not found at: {model_path}")
@@ -55,7 +56,6 @@ def load_any_model(model_name: str = "best") -> Any:
     """
     Load a named model from the models/ directory.
     Supported names: 'best', 'xgboost', 'random_forest'.
-    Returns the loaded model object.
     """
     name_map = {
         "best": "best_model",
@@ -76,7 +76,7 @@ def load_any_model(model_name: str = "best") -> Any:
 
 def get_tree_explainer(model: Any) -> shap.TreeExplainer:
     """
-    Initialize a SHAP TreeExplainer for the XGBoost model.
+    Initialize a SHAP TreeExplainer for tree-based classifiers (Random Forest or XGBoost).
     """
     return shap.TreeExplainer(model)
 
@@ -88,9 +88,12 @@ def compute_shap_values(
     """
     Compute SHAP Explanation object for the given dataset.
     Ensures column ordering strictly matches training schema.
+    For binary multi-output models (e.g. Random Forest), isolates the positive class (Class 1 = Diabetic).
     """
     X_ordered = X[FEATURE_COLUMNS]
     explanation = explainer(X_ordered)
+    if hasattr(explanation, "values") and explanation.values.ndim == 3:
+        explanation = explanation[:, :, 1]
     return explanation
 
 
@@ -102,8 +105,10 @@ def compute_global_importance(
     Calculate mean absolute SHAP value for each feature, sorted descending.
     """
     vals = explanation.values
-    if isinstance(vals, list):  # If multi-class list, take positive class
+    if isinstance(vals, list):
         vals = vals[1]
+    if vals.ndim == 3:
+        vals = vals[:, :, 1]
 
     mean_abs_shap = np.mean(np.abs(vals), axis=0)
     df_importance = pd.DataFrame({
@@ -147,7 +152,7 @@ def generate_shap_beeswarm(
     plt.figure(figsize=(9, 6))
     shap.plots.beeswarm(explanation, max_display=len(FEATURE_COLUMNS), show=False)
     plt.title("SHAP Beeswarm Plot: Feature Impact on Diabetes Risk", fontsize=13, weight="bold", pad=12)
-    plt.xlabel("SHAP Value (Impact on Log-Odds of Diabetes)", fontsize=11)
+    plt.xlabel("SHAP Value (Impact on Model Output / Log-Odds of Diabetes)", fontsize=11)
     plt.tight_layout()
 
     fig = plt.gcf()
@@ -175,10 +180,9 @@ def generate_dependence_plots(
         if feat not in FEATURE_COLUMNS:
             continue
         plt.figure(figsize=(7, 5))
-        # Use shap.plots.scatter
         shap.plots.scatter(explanation[:, feat], color=explanation, show=False)
         plt.title(f"SHAP Dependence: {feat}", fontsize=13, weight="bold", pad=10)
-        plt.ylabel("SHAP Value (Log-Odds Impact)", fontsize=11)
+        plt.ylabel("SHAP Value (Impact on Risk)", fontsize=11)
         plt.xlabel(feat, fontsize=11)
         plt.tight_layout()
 
@@ -222,19 +226,21 @@ def compare_feature_importance(
     output_plot_path: Optional[Union[str, Path]] = None,
 ) -> pd.DataFrame:
     """
-    Compare native XGBoost feature importances with SHAP mean absolute importances.
+    Compare native model feature importances with SHAP mean absolute importances.
     Creates comparison table and publication-quality dual-ranked comparison plot.
     """
     native_importances = model.feature_importances_
+    model_name = "Random Forest" if "RandomForest" in type(model).__name__ else "XGBoost"
+
     df_native = pd.DataFrame({
         "Feature": FEATURE_COLUMNS,
-        "XGBoost_Importance": native_importances,
+        f"{model_name.replace(' ', '_')}_Importance": native_importances,
     })
 
     merged = pd.merge(df_native, df_shap_importance, on="Feature")
 
-    # Add ranks (1 = highest importance)
-    merged["XGBoost_Rank"] = merged["XGBoost_Importance"].rank(ascending=False, method="min").astype(int)
+    native_col = f"{model_name.replace(' ', '_')}_Importance"
+    merged["Native_Rank"] = merged[native_col].rank(ascending=False, method="min").astype(int)
     merged["SHAP_Rank"] = merged["Mean_Absolute_SHAP"].rank(ascending=False, method="min").astype(int)
 
     # Sort by SHAP rank
@@ -246,22 +252,22 @@ def compare_feature_importance(
         merged.to_csv(out_csv, index=False)
 
     if output_plot_path:
-        # Normalize both metrics to [0, 1] relative to their max for side-by-side comparison
         plot_df = merged.copy()
-        plot_df["Norm_XGBoost"] = plot_df["XGBoost_Importance"] / plot_df["XGBoost_Importance"].max()
+        plot_df["Norm_Native"] = plot_df[native_col] / plot_df[native_col].max()
         plot_df["Norm_SHAP"] = plot_df["Mean_Absolute_SHAP"] / plot_df["Mean_Absolute_SHAP"].max()
 
         df_melt = plot_df.melt(
             id_vars=["Feature"],
-            value_vars=["Norm_XGBoost", "Norm_SHAP"],
+            value_vars=["Norm_Native", "Norm_SHAP"],
             var_name="Importance_Type",
             value_name="Normalized_Score",
         )
         df_melt["Importance_Type"] = df_melt["Importance_Type"].replace({
-            "Norm_XGBoost": "XGBoost Native Importance",
+            "Norm_Native": f"{model_name} Native Importance",
             "Norm_SHAP": "SHAP Mean |Value|",
         })
 
+        palette = ["#2b5c8f", "#1f77b4"] if "Random Forest" in model_name else ["#ff7f0e", "#1f77b4"]
         plt.figure(figsize=(10, 6))
         sns.set_theme(style="whitegrid")
         ax = sns.barplot(
@@ -269,9 +275,9 @@ def compare_feature_importance(
             x="Feature",
             y="Normalized_Score",
             hue="Importance_Type",
-            palette=["#ff7f0e", "#1f77b4"],
+            palette=palette,
         )
-        plt.title("Comparison: XGBoost Native Importance vs. SHAP Importance", fontsize=14, weight="bold", pad=12)
+        plt.title(f"Comparison: {model_name} Native Importance vs. SHAP Importance", fontsize=13, weight="bold", pad=12)
         plt.ylabel("Relative Score (Normalized to Max = 1.0)", fontsize=11)
         plt.xlabel("Predictor Feature", fontsize=11)
         plt.xticks(rotation=25, ha="right", fontsize=10)
@@ -289,8 +295,8 @@ def compare_feature_importance(
 
 class DiabetesExplainerService:
     """
-    Singleton-style service for computing real-time SHAP explanations for new inference queries.
-    Supports model selection: 'best', 'xgboost', or 'random_forest'.
+    Singleton service for computing real-time SHAP explanations for new inference queries.
+    Uses saved metadata.json for leak-free medians and classification threshold.
     """
     _instances: Dict[str, "DiabetesExplainerService"] = {}
 
@@ -302,10 +308,25 @@ class DiabetesExplainerService:
         self.model_name = model_name
         self.explainer = get_tree_explainer(self.model)
 
-        # Precompute training medians for imputation using the same pipeline
-        data = load_processed_data()
-        X_train, _, _, _ = split_data(data, test_size=0.20, random_state=42)
-        self.imputation_medians = X_train[ZERO_AS_MISSING].median().to_dict()
+        # Load metadata if present
+        meta = load_metadata()
+        if meta and "imputation_medians" in meta:
+            self.imputation_medians = meta["imputation_medians"]
+        else:
+            data = load_processed_data()
+            X_train, _, _, _ = split_data(data, test_size=0.20, random_state=42)
+            self.imputation_medians = X_train[ZERO_AS_MISSING].median().to_dict()
+
+        # Decision threshold
+        self.threshold = 0.50
+        if meta and "models" in meta:
+            norm_models = {k.lower().replace("_", " "): v for k, v in meta["models"].items()}
+            lookup_key = model_name.lower().replace("_", " ").strip()
+            if lookup_key == "best":
+                best_name = meta.get("best_model_name", "Random Forest")
+                lookup_key = best_name.lower().replace("_", " ").strip()
+            m_info = norm_models.get(lookup_key, {})
+            self.threshold = float(m_info.get("optimal_threshold", 0.50))
 
     @classmethod
     def get_instance(cls, model_name: str = "best") -> "DiabetesExplainerService":
@@ -321,8 +342,8 @@ class DiabetesExplainerService:
         """
         Reusable inference explanation API:
         1. Validates input features
-        2. Applies the same leak-free median imputation
-        3. Generates probability and predicted class
+        2. Applies training median imputation
+        3. Generates probability and threshold-governed predicted class
         4. Calculates exact SHAP contributions and base value
         5. Identifies top positive and negative contributors
         """
@@ -347,37 +368,34 @@ class DiabetesExplainerService:
             if pd.isna(val) or val == 0:
                 df_input.at[0, col] = self.imputation_medians[col]
 
-        # Generate prediction
+        # Generate probability
         probability = float(self.model.predict_proba(df_input)[0, 1])
-        predicted_class = int(self.model.predict(df_input)[0])
+        predicted_class = 1 if probability >= self.threshold else 0
 
         # Compute SHAP
         explanation = self.explainer(df_input)
 
-        # Handle XGBoost (values shape: n_features) and Random Forest (shape: n_features x n_classes)
-        raw_shap = explanation.values[0]      # (n_features,) or (n_features, n_classes)
-        raw_base = explanation.base_values[0]  # scalar or array of shape (n_classes,)
-
-        import numpy as np
-        import shap as shap_lib
+        raw_shap = explanation.values[0]
+        raw_base = explanation.base_values[0]
 
         if np.ndim(raw_shap) == 2:
-            # Random Forest multi-class: take positive class (index 1)
             shap_values = raw_shap[:, 1]
             base_value = float(raw_base[1])
+            output_space = "probability"
         else:
             shap_values = raw_shap
             base_value = float(raw_base)
+            output_space = "log_odds"
 
-        # Build a clean 1-D Explanation object for waterfall plot (works for both models)
-        waterfall_exp = shap_lib.Explanation(
+        margin_output = float(base_value + np.sum(shap_values))
+
+        waterfall_exp = shap.Explanation(
             values=shap_values,
             base_values=base_value,
             data=df_input[FEATURE_COLUMNS].values[0],
             feature_names=FEATURE_COLUMNS,
         )
 
-        # Breakdown contributions
         contributions = {}
         top_pos = []
         top_neg = []
@@ -395,15 +413,17 @@ class DiabetesExplainerService:
             else:
                 top_neg.append((feat, sv, val))
 
-        # Sort contributions
         top_pos.sort(key=lambda x: x[1], reverse=True)
-        top_neg.sort(key=lambda x: x[1])  # most negative first
+        top_neg.sort(key=lambda x: x[1])
 
         return {
             "predicted_class": predicted_class,
-            "prediction_label": "High Risk (Diabetic)" if predicted_class == 1 else "Low Risk (Non-Diabetic)",
+            "prediction_label": "Elevated Risk" if predicted_class == 1 else "Lower Risk",
             "probability": probability,
+            "threshold": self.threshold,
             "base_value": base_value,
+            "output_space": output_space,
+            "margin_output": margin_output,
             "feature_contributions": contributions,
             "top_positive_contributors": top_pos,
             "top_negative_contributors": top_neg,
