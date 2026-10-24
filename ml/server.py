@@ -160,6 +160,18 @@ def start_prediction_server(
 
                 thread = threading.Thread(target=server.serve_forever, daemon=True, name="PredictionServerThread")
                 thread.start()
+
+                # Verify server readiness via health probe
+                import time
+                import urllib.request
+                for _ in range(20):
+                    try:
+                        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=0.5) as resp:
+                            if resp.status == 200:
+                                break
+                    except Exception:
+                        time.sleep(0.05)
+
                 return port
             except OSError:
                 continue

@@ -46,7 +46,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Start background inference server
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_prediction_server_port() -> int:
     from ml.server import start_prediction_server
     return start_prediction_server(initial_port=8502)

@@ -80,26 +80,25 @@ def test_02_page_1_assessment_content_and_results_exclusion(frontend_html: str):
 
 
 def test_03_inference_transition_experience(frontend_html: str):
-    """Verify animated 4-stage inference experience with blue/cyan/lavender palette."""
+    """Verify minimal, clean evaluation screen with waveform icon, Inference Engine label, and heading."""
     assert 'id="inferenceTransitionModal"' in frontend_html
-    assert 'id="inferenceProgressBar"' in frontend_html
-    assert 'id="inferenceStagesContainer"' in frontend_html
+    assert "Evaluating Diabetes Risk" in frontend_html
+    assert "vital_signs" in frontend_html
+    assert "Inference Engine" in frontend_html
+    assert "eval-pulse-glow" in frontend_html
 
-    # All 4 stages
-    assert 'id="stageItem1"' in frontend_html
-    assert 'id="stageItem2"' in frontend_html
-    assert 'id="stageItem3"' in frontend_html
-    assert 'id="stageItem4"' in frontend_html
-
-    # 4 stage titles/descriptions
-    assert "1. Biometric Ingestion &amp; Preprocessing" in frontend_html
-    assert "2. Ensemble Model Execution" in frontend_html
-    assert "3. TreeSHAP Feature Attribution" in frontend_html
-    assert "4. Risk Calibration &amp; Synthesis" in frontend_html
-
-    # Color classes: blue, cyan, lavender
-    assert "bg-gradient-to-r from-primary via-secondary-container to-[#b4c5ff]" in frontend_html
-    assert "bg-[#dae2fd]" in frontend_html or "#dae2fd" in frontend_html
+    # Verify progress bar, 4 stages, and footer tags are completely removed
+    assert 'id="inferenceProgressBar"' not in frontend_html
+    assert 'id="inferenceStagesContainer"' not in frontend_html
+    assert 'id="stageItem1"' not in frontend_html
+    assert 'id="stageItem2"' not in frontend_html
+    assert 'id="stageItem3"' not in frontend_html
+    assert 'id="stageItem4"' not in frontend_html
+    assert "1. Biometric Ingestion" not in frontend_html
+    assert "2. Ensemble Model Execution" not in frontend_html
+    assert "3. TreeSHAP Feature Attribution" not in frontend_html
+    assert "4. Risk Calibration" not in frontend_html
+    assert 'id="inferenceModelTag"' not in frontend_html
 
 
 def test_04_page_2_prediction_results_structure(frontend_html: str):

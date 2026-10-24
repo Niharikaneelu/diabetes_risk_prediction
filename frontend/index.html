@@ -63,6 +63,43 @@
 
     .font-code-num { font-variant-numeric: tabular-nums; font-family: 'Inter', monospace; }
     .transition-smooth { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Minimal Evaluation Modal Animations */
+    @keyframes evalPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 16px -2px rgba(0, 83, 219, 0.3);
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 8px 24px -2px rgba(0, 83, 219, 0.5);
+      }
+    }
+    .eval-pulse-glow {
+      animation: evalPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes evalWaveGlow {
+      0%, 100% { opacity: 0.92; }
+      50% { opacity: 1; filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)); }
+    }
+    .eval-pulse-glow .material-symbols-outlined {
+      animation: evalWaveGlow 2.2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 20% { opacity: 0; }
+      40% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .loading-dots .dot-1 {
+      animation: dotPulse 1.4s infinite 0s;
+    }
+    .loading-dots .dot-2 {
+      animation: dotPulse 1.4s infinite 0.25s;
+    }
+    .loading-dots .dot-3 {
+      animation: dotPulse 1.4s infinite 0.5s;
+    }
     
     @media print {
       header, footer, #statusToast, .no-print { display: none !important; }
@@ -592,100 +629,30 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- FOUR-STAGE ANIMATED INFERENCE TRANSITION MODAL                            -->
+      <!-- MINIMAL CLEAN EVALUATION LOADING MODAL                                    -->
       <!-- ========================================================================= -->
       <div id="inferenceTransitionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-all duration-300">
-        <div class="relative w-full max-w-lg bg-surface-container-lowest/95 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,83,219,0.25)] border border-primary-fixed/40 flex flex-col gap-6 overflow-hidden">
+        <div class="relative w-full max-w-md bg-surface-container-lowest/95 backdrop-blur-2xl rounded-3xl p-6 sm:p-7 shadow-[0_25px_60px_-15px_rgba(0,83,219,0.25)] border border-primary-fixed/40 overflow-hidden">
           <!-- Ambient Blue/Cyan/Lavender Radial Glows -->
-          <div class="absolute -top-20 -left-20 w-44 h-44 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-[#dae2fd]/25 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute -top-16 -left-16 w-36 h-36 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-16 -right-16 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#dae2fd]/25 rounded-full blur-2xl pointer-events-none"></div>
 
-          <!-- Header -->
-          <div class="flex items-center gap-3.5 relative z-10">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-secondary-container text-on-primary flex items-center justify-center shadow-md animate-pulse">
-              <span class="material-symbols-outlined text-[26px]">vital_signs</span>
+          <!-- Minimal Evaluation Screen Content -->
+          <div class="flex items-center gap-4 relative z-10">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-secondary-container text-on-primary flex items-center justify-center shadow-md shrink-0 eval-pulse-glow">
+              <span class="material-symbols-outlined text-[28px]">vital_signs</span>
             </div>
-            <div>
+            <div class="flex flex-col justify-center min-w-0">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">Inference Engine</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">Inference Engine</span>
                 <span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
               </div>
-              <h3 class="text-headline-sm text-on-surface font-bold text-[19px] mt-0.5">Evaluating Diabetes Risk</h3>
+              <h3 class="text-headline-sm text-on-surface font-bold text-[20px] sm:text-[22px] mt-1 tracking-tight flex items-baseline">
+                <span>Evaluating Diabetes Risk</span>
+                <span class="inline-flex tracking-widest text-primary ml-0.5 loading-dots"><span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span></span>
+              </h3>
             </div>
-          </div>
-
-          <!-- Animated Progress Bar (Blue / Cyan / Lavender gradient) -->
-          <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden relative z-10">
-            <div id="inferenceProgressBar" class="h-full bg-gradient-to-r from-primary via-secondary-container to-[#b4c5ff] transition-all duration-300 rounded-full" style="width: 25%;"></div>
-          </div>
-
-          <!-- 4 Stages List -->
-          <div class="flex flex-col gap-3 relative z-10" id="inferenceStagesContainer">
-            <!-- Stage 1: Cyan / Tealing -->
-            <div id="stageItem1" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-high border-2 border-primary shadow-sm transition-all">
-              <div id="stageIcon1" class="w-7 h-7 rounded-lg bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs">
-                <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center justify-between">
-                  <span class="text-label-md font-bold text-on-surface">1. Biometric Ingestion &amp; Preprocessing</span>
-                  <span id="stageStatus1" class="text-[11px] font-mono font-bold text-primary">Validating...</span>
-                </div>
-                <p class="text-[12px] text-on-surface-variant mt-0.5">Validating 8 physiological markers &amp; applying median imputation protocol</p>
-              </div>
-            </div>
-
-            <!-- Stage 2: Blue -->
-            <div id="stageItem2" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
-              <div id="stageIcon2" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
-                <span>2</span>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center justify-between">
-                  <span class="text-label-md font-bold text-on-surface">2. Ensemble Model Execution</span>
-                  <span id="stageStatus2" class="text-[11px] font-mono font-bold text-outline">Queued</span>
-                </div>
-                <p class="text-[12px] text-on-surface-variant mt-0.5">Evaluating trained estimators against calibrated decision threshold</p>
-              </div>
-            </div>
-
-            <!-- Stage 3: Lavender -->
-            <div id="stageItem3" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
-              <div id="stageIcon3" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
-                <span>3</span>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center justify-between">
-                  <span class="text-label-md font-bold text-on-surface">3. TreeSHAP Feature Attribution</span>
-                  <span id="stageStatus3" class="text-[11px] font-mono font-bold text-outline">Queued</span>
-                </div>
-                <p class="text-[12px] text-on-surface-variant mt-0.5">Computing exact additive Shapley contributions for patient biometrics</p>
-              </div>
-            </div>
-
-            <!-- Stage 4: Cyan/Emerald -->
-            <div id="stageItem4" class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60">
-              <div id="stageIcon4" class="w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5">
-                <span>4</span>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center justify-between">
-                  <span class="text-label-md font-bold text-on-surface">4. Risk Calibration &amp; Synthesis</span>
-                  <span id="stageStatus4" class="text-[11px] font-mono font-bold text-outline">Queued</span>
-                </div>
-                <p class="text-[12px] text-on-surface-variant mt-0.5">Synthesizing clinical risk tier &amp; explainability report</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer Note -->
-          <div class="flex items-center justify-between pt-2 text-[12px] text-outline relative z-10 border-t border-outline-variant/20">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px] text-secondary">security</span>
-              Zero-Retention Client Ingestion
-            </span>
-            <span id="inferenceModelTag" class="font-mono text-primary font-semibold">Random Forest</span>
           </div>
         </div>
       </div>
@@ -1463,7 +1430,10 @@
       }, 2600);
     }
 
-    function changeModel(modelName) {
+    function changeModel(modelName, options = {}) {
+      const isInitial = options && options.isInitial === true;
+      const showNotification = options && options.showNotification !== undefined ? options.showNotification : !isInitial;
+
       if (activeModel !== modelName) {
         invalidateStaleResults('model_changed');
       }
@@ -1514,7 +1484,9 @@
         if (mTh) mTh.innerText = '0.42';
         if (gTh) gTh.innerText = 'Threshold: 0.42';
         if (bScore) bScore.innerText = 'Threshold: 0.42';
-        showToast('Switched to XGBoost Model (Decision Threshold: 0.42)');
+        if (showNotification) {
+          showToast('Switched to XGBoost Model (Decision Threshold: 0.42)');
+        }
       } else {
         toggleRf.className = 'px-4 py-1.5 rounded-lg text-label-md font-bold transition-all bg-primary text-on-primary shadow-xs';
         toggleXgb.className = 'px-4 py-1.5 rounded-lg text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all';
@@ -1537,11 +1509,19 @@
         if (mTh) mTh.innerText = '0.48';
         if (gTh) gTh.innerText = 'Threshold: 0.48';
         if (bScore) bScore.innerText = 'Threshold: 0.48';
-        showToast('Switched to Random Forest Model (Decision Threshold: 0.48)');
+        if (showNotification) {
+          showToast('Switched to Random Forest Model (Decision Threshold: 0.48)');
+        }
       }
 
-      // Recompute prediction with new model characteristics
-      calculateRisk(true);
+      // Only recompute prediction if all form inputs are already populated and valid
+      if (validateFormInputs({ notify: false })) {
+        calculateRisk({ notifyValidation: false });
+      }
+    }
+
+    function initializeDefaultModel(modelName) {
+      changeModel(modelName, { isInitial: true, showNotification: false });
     }
 
     function toggleModelFromCard() {
@@ -2421,7 +2401,8 @@
       }
     }
 
-    function validateFormInputs() {
+    function validateFormInputs(options = {}) {
+      const notify = (options && typeof options === 'object' && options.notify !== undefined) ? options.notify : true;
       const fields = [
         { id: 'inputGlucose', name: 'Glucose (OGTT)', min: 40, max: 300 },
         { id: 'inputBMI', name: 'Body Mass Index (BMI)', min: 10, max: 70 },
@@ -2438,31 +2419,41 @@
         if (!el) continue;
         const v = el.value.trim();
         if (v === '') {
-          showToast('Validation Error: ' + f.name + ' is required');
-          el.focus();
+          if (notify) {
+            showToast('Validation Error: ' + f.name + ' is required');
+            el.focus();
+          }
           return false;
         }
         const num = parseFloat(v);
         if (isNaN(num)) {
-          showToast('Validation Error: ' + f.name + ' must be a valid number');
-          el.focus();
+          if (notify) {
+            showToast('Validation Error: ' + f.name + ' must be a valid number');
+            el.focus();
+          }
           return false;
         }
         if (num < f.min || num > f.max) {
-          showToast('Validation Error: ' + f.name + ' must be between ' + f.min + ' and ' + f.max);
-          el.focus();
+          if (notify) {
+            showToast('Validation Error: ' + f.name + ' must be between ' + f.min + ' and ' + f.max);
+            el.focus();
+          }
           return false;
         }
       }
       return true;
     }
 
-    async function calculateRisk() {
+    async function calculateRisk(options = {}) {
       // Prevent duplicate concurrent requests
       if (isCalculating) return;
 
+      const notifyValidation = (options && typeof options === 'object' && options.notifyValidation !== undefined)
+        ? options.notifyValidation
+        : (options !== true);
+
       // Validate inputs
-      if (!validateFormInputs()) {
+      if (!validateFormInputs({ notify: notifyValidation })) {
         return;
       }
 
@@ -2497,12 +2488,6 @@
       const icon = document.getElementById('calcIcon');
       const text = document.getElementById('calcText');
       const modal = document.getElementById('inferenceTransitionModal');
-      const progressBar = document.getElementById('inferenceProgressBar');
-      const modelTag = document.getElementById('inferenceModelTag');
-
-      if (modelTag) {
-        modelTag.innerText = activeModel === 'random_forest' ? 'Random Forest (Selected Best)' : 'XGBoost (Tuned)';
-      }
 
       isCalculating = true;
       const thisRequestId = ++activeRequestId;
@@ -2512,66 +2497,21 @@
         icon.innerText = 'sync';
         icon.classList.add('animate-spin');
       }
-      if (text) text.innerText = 'Running Model Inference...';
+      if (text) text.innerText = 'Evaluating Risk...';
 
-      // Helper to update stages in 4-stage animated transition experience
-      function setStage(stageNum, status, isDone = false) {
-        for (let s = 1; s <= 4; s++) {
-          const item = document.getElementById('stageItem' + s);
-          const iconEl = document.getElementById('stageIcon' + s);
-          const statusEl = document.getElementById('stageStatus' + s);
-          if (!item || !iconEl || !statusEl) continue;
-
-          if (s < stageNum || (s === stageNum && isDone)) {
-            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container border border-secondary/30 transition-all';
-            iconEl.className = 'w-7 h-7 rounded-lg bg-secondary text-on-secondary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs';
-            iconEl.innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span>';
-            statusEl.className = 'text-[11px] font-mono font-bold text-secondary';
-            statusEl.innerText = 'Completed';
-          } else if (s === stageNum) {
-            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container-high border-2 border-primary shadow-sm transition-all';
-            iconEl.className = 'w-7 h-7 rounded-lg bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5 shadow-xs';
-            iconEl.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span>';
-            statusEl.className = 'text-[11px] font-mono font-bold text-primary';
-            statusEl.innerText = status || 'Processing...';
-          } else {
-            item.className = 'flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/50 border border-outline-variant/20 transition-all opacity-60';
-            iconEl.className = 'w-7 h-7 rounded-lg bg-surface-container text-outline flex items-center justify-center text-label-sm font-bold shrink-0 mt-0.5';
-            iconEl.innerHTML = '<span>' + s + '</span>';
-            statusEl.className = 'text-[11px] font-mono font-bold text-outline';
-            statusEl.innerText = 'Queued';
-          }
-        }
-        if (progressBar) {
-          const pcts = [25, 50, 75, 100];
-          progressBar.style.width = pcts[stageNum - 1] + '%';
-        }
-      }
-
-      // Display animated four-stage transition experience
+      // Display minimal clean evaluation screen
       if (modal) modal.classList.remove('hidden');
-      setStage(1, 'Validating biometrics...');
 
       const port = (window.PREDICTION_API_PORT || 8502);
       const host = (window.location && window.location.hostname && window.location.hostname !== '') ? window.location.hostname : '127.0.0.1';
       const apiUrl = 'http://' + host + ':' + port + '/api/predict';
 
-      const delay = (ms) => new Promise(res => setTimeout(res, ms));
-
       try {
-        const fetchPromise = fetch(apiUrl, {
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        await delay(350);
-        setStage(2, 'Running ensemble...');
-
-        await delay(350);
-        setStage(3, 'Calculating TreeSHAP...');
-
-        const response = await fetchPromise;
 
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
@@ -2585,11 +2525,6 @@
           console.warn("Discarding stale inference response for request #" + thisRequestId);
           return;
         }
-
-        await delay(350);
-        setStage(4, 'Synthesizing interpretation...', true);
-
-        await delay(300);
 
         // Store result record
         currentResultRecord = {
@@ -2605,7 +2540,7 @@
         // Render dedicated results view
         renderResults(currentResultRecord);
 
-        // Hide transition modal
+        // Hide evaluation screen
         if (modal) modal.classList.add('hidden');
 
         // Navigate to dedicated results page
@@ -2743,7 +2678,7 @@
 
     // Initialize application state and event listeners on load
     window.addEventListener('DOMContentLoaded', () => {
-      changeModel('random_forest');
+      initializeDefaultModel('random_forest');
       switchImportanceView('rf');
 
       // Attach invalidation & change listeners to all 8 form inputs
